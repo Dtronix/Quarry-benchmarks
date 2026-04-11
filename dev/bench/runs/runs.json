@@ -1,5 +1,11 @@
 [
   {
+    "sha": "77030fa3d0102d4bcc359a1e91328c752a11ccc4",
+    "message": "Add light/dark mode support to benchmark pages",
+    "date": "2026-04-11T16:18:47-04:00",
+    "file": "2026-04-11-77030fa3.html"
+  },
+  {
     "sha": "3b765e5585196d8d4af3cb86f701f9c2ba507516",
     "message": "Polish benchmark reports and remove dry run option",
     "date": "2026-04-11T11:38:05-04:00",

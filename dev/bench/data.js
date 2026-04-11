@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775878362519,
+  "lastUpdate": 1775881332008,
   "repoUrl": "https://github.com/Dtronix/Quarry",
   "entries": {
     "Quarry Benchmarks": [
@@ -1168,6 +1168,1174 @@ window.BENCHMARK_DATA = {
             "value": 383148.7373046875,
             "unit": "ns",
             "range": "± 4976.700259174579"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "DJGosnell",
+            "username": "DJGosnell",
+            "email": "DJGosnell@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "fea9c3c2894b730f2fe07a4ca398b338aa715255",
+          "message": "Add code fix tests for EF Core, ADO.NET, SqlKata, and Dapper converters (#245) (#251)\n\n* Add EfCoreMigrationCodeFixTests\n\nTests: FixableDiagnosticIds, FixAllProvider, basic replacement,\nawait preservation, using directive insertion, QRM013 rejection.\n\n* Add AdoNetMigrationCodeFixTests\n\nTests: FixableDiagnosticIds, FixAllProvider, basic replacement,\nTODO comment insertion, using directive insertion, QRM023 rejection.\n\n* Add SqlKataMigrationCodeFixTests\n\nTests: FixableDiagnosticIds, FixAllProvider, basic replacement,\nusing directive insertion, QRM033 rejection.\n\n* Add DapperMigrationCodeFixTests\n\nTests: FixableDiagnosticIds, FixAllProvider, basic replacement,\nawait preservation, using directive insertion, QRM003 rejection.\n\n* Add warning-tier (0x2) code fix tests for EfCore, AdoNet, and Dapper\n\nCovers QRM012 (AsNoTracking), QRM022 (DELETE without WHERE),\nQRM002 (DELETE without WHERE) — verifies code fix applies even\nwhen conversion has warnings.\n\n* Update review classifications and workflow state\n\n* Update workflow with PR number and session log\n\n* Update workflow phase to FINALIZE\n\n* chore: remove session artifacts before merge",
+          "timestamp": "2026-04-11T02:59:35Z",
+          "url": "https://github.com/Dtronix/Quarry/commit/fea9c3c2894b730f2fe07a4ca398b338aa715255"
+        },
+        "date": 1775881331697,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateAvgBenchmarks.Raw_Avg",
+            "value": 17599.28364998954,
+            "unit": "ns",
+            "range": "± 260.2701868090105"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateAvgBenchmarks.Dapper_Avg",
+            "value": 18665.49927344689,
+            "unit": "ns",
+            "range": "± 83.3509418262802"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateAvgBenchmarks.Quarry_Avg",
+            "value": 18665.831970214844,
+            "unit": "ns",
+            "range": "± 169.11764103447436"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateAvgBenchmarks.SqlKata_Avg",
+            "value": 36153.14055524553,
+            "unit": "ns",
+            "range": "± 511.3854385665724"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateAvgBenchmarks.EfCore_Avg",
+            "value": 145859.15658804087,
+            "unit": "ns",
+            "range": "± 1269.3867042849365"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateCountBenchmarks.Quarry_Count",
+            "value": 8268.588829040527,
+            "unit": "ns",
+            "range": "± 25.407693461626312"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateCountBenchmarks.Dapper_Count",
+            "value": 8379.154398991512,
+            "unit": "ns",
+            "range": "± 59.618774332560136"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateCountBenchmarks.Raw_Count",
+            "value": 8615.97784096854,
+            "unit": "ns",
+            "range": "± 64.92422882335956"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateCountBenchmarks.SqlKata_Count",
+            "value": 23795.691497802734,
+            "unit": "ns",
+            "range": "± 195.0356747102744"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateCountBenchmarks.EfCore_Count",
+            "value": 36024.81074015299,
+            "unit": "ns",
+            "range": "± 105.42722455402146"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateSumBenchmarks.Raw_Sum",
+            "value": 17632.954175313313,
+            "unit": "ns",
+            "range": "± 77.66610094328105"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateSumBenchmarks.Quarry_Sum",
+            "value": 17938.233053354117,
+            "unit": "ns",
+            "range": "± 167.45844293824578"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateSumBenchmarks.Dapper_Sum",
+            "value": 18767.086975097656,
+            "unit": "ns",
+            "range": "± 180.567204160679"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateSumBenchmarks.SqlKata_Sum",
+            "value": 36150.86914934431,
+            "unit": "ns",
+            "range": "± 405.58980479669964"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateSumBenchmarks.EfCore_Sum",
+            "value": 192360.00221354168,
+            "unit": "ns",
+            "range": "± 3336.4521635405076"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ColdStartBenchmarks.Raw_ColdStart",
+            "value": 181775.3772723858,
+            "unit": "ns",
+            "range": "± 1039.717020575592"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ColdStartBenchmarks.Quarry_ColdStart",
+            "value": 194567.22220552884,
+            "unit": "ns",
+            "range": "± 1032.5484612207201"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ColdStartBenchmarks.SqlKata_ColdStart",
+            "value": 214125.7583705357,
+            "unit": "ns",
+            "range": "± 2475.1078271857273"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ColdStartBenchmarks.Dapper_ColdStart",
+            "value": 227033.5018310547,
+            "unit": "ns",
+            "range": "± 503.4353018351263"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ColdStartBenchmarks.EfCore_ColdStart",
+            "value": 415249.0564959491,
+            "unit": "ns",
+            "range": "± 11292.682660823973"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexJoinFilterPaginateBenchmarks.Dapper_JoinFilterPaginate",
+            "value": 30687.946071079798,
+            "unit": "ns",
+            "range": "± 202.3484621011364"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexJoinFilterPaginateBenchmarks.Raw_JoinFilterPaginate",
+            "value": 31836.39878023588,
+            "unit": "ns",
+            "range": "± 205.98246477877944"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexJoinFilterPaginateBenchmarks.Quarry_JoinFilterPaginate",
+            "value": 34454.720720563615,
+            "unit": "ns",
+            "range": "± 332.69534518293295"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexJoinFilterPaginateBenchmarks.SqlKata_JoinFilterPaginate",
+            "value": 84779.90910993304,
+            "unit": "ns",
+            "range": "± 1497.782848964361"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexJoinFilterPaginateBenchmarks.EfCore_JoinFilterPaginate",
+            "value": 130261.1455078125,
+            "unit": "ns",
+            "range": "± 903.0285184784517"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexMultiJoinAggregateBenchmarks.Raw_MultiJoinAggregate",
+            "value": 53062.46601359049,
+            "unit": "ns",
+            "range": "± 181.15236840137564"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexMultiJoinAggregateBenchmarks.Quarry_MultiJoinAggregate",
+            "value": 53249.290226862984,
+            "unit": "ns",
+            "range": "± 327.3504316896733"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexMultiJoinAggregateBenchmarks.Dapper_MultiJoinAggregate",
+            "value": 53510.5963275616,
+            "unit": "ns",
+            "range": "± 232.1264512758828"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexMultiJoinAggregateBenchmarks.SqlKata_MultiJoinAggregate",
+            "value": 86775.82406850961,
+            "unit": "ns",
+            "range": "± 606.1313594248177"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexMultiJoinAggregateBenchmarks.EfCore_MultiJoinAggregate",
+            "value": 133698.26384626116,
+            "unit": "ns",
+            "range": "± 1760.2383841203618"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ConditionalBranchBenchmarks.Raw_ConditionalQuery",
+            "value": 84621.4836669922,
+            "unit": "ns",
+            "range": "± 1310.7472108630586"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ConditionalBranchBenchmarks.Quarry_ConditionalQuery",
+            "value": 88485.1228121244,
+            "unit": "ns",
+            "range": "± 500.007505852761"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ConditionalBranchBenchmarks.Dapper_ConditionalQuery",
+            "value": 101529.09014892578,
+            "unit": "ns",
+            "range": "± 451.18176606965204"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ConditionalBranchBenchmarks.SqlKata_ConditionalQuery",
+            "value": 132489.382359096,
+            "unit": "ns",
+            "range": "± 2289.130099381871"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ConditionalBranchBenchmarks.EfCore_ConditionalQuery",
+            "value": 174082.9444110577,
+            "unit": "ns",
+            "range": "± 2021.4891711769285"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteMultiBenchmarks.Dapper_MultiCte",
+            "value": 86534.71919133113,
+            "unit": "ns",
+            "range": "± 594.4818688414407"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteMultiBenchmarks.Raw_MultiCte",
+            "value": 108118.78057391827,
+            "unit": "ns",
+            "range": "± 683.8811451348566"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteMultiBenchmarks.SqlKata_MultiCte",
+            "value": 109475.64320591518,
+            "unit": "ns",
+            "range": "± 819.7906822585949"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteMultiBenchmarks.Quarry_MultiCte",
+            "value": 113262.00274188702,
+            "unit": "ns",
+            "range": "± 632.4033462468844"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteMultiBenchmarks.EfCore_MultiCte",
+            "value": 167620.48161764705,
+            "unit": "ns",
+            "range": "± 3344.771023694287"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteProjectionBenchmarks.Dapper_CteProjection",
+            "value": 82341.93205769856,
+            "unit": "ns",
+            "range": "± 205.71162168518987"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteProjectionBenchmarks.Raw_CteProjection",
+            "value": 105401.1223801833,
+            "unit": "ns",
+            "range": "± 556.5355578571633"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteProjectionBenchmarks.Quarry_CteProjection",
+            "value": 106350.15755789621,
+            "unit": "ns",
+            "range": "± 909.1201975165601"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteProjectionBenchmarks.SqlKata_CteProjection",
+            "value": 109891.00776554988,
+            "unit": "ns",
+            "range": "± 421.3521865797146"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteProjectionBenchmarks.EfCore_CteProjection",
+            "value": 158887.28006417412,
+            "unit": "ns",
+            "range": "± 2700.903012219583"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteSimpleBenchmarks.Dapper_SimpleCte",
+            "value": 85323.98846905048,
+            "unit": "ns",
+            "range": "± 199.4561102889489"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteSimpleBenchmarks.SqlKata_SimpleCte",
+            "value": 106794.80911020133,
+            "unit": "ns",
+            "range": "± 651.4163108113432"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteSimpleBenchmarks.Quarry_SimpleCte",
+            "value": 109993.05511005108,
+            "unit": "ns",
+            "range": "± 699.6583968636204"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteSimpleBenchmarks.Raw_SimpleCte",
+            "value": 110477.44004469652,
+            "unit": "ns",
+            "range": "± 612.7602115343108"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteSimpleBenchmarks.EfCore_SimpleCte",
+            "value": 164588.0454676011,
+            "unit": "ns",
+            "range": "± 5002.700376697283"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow_Inlined",
+            "value": 44197.8,
+            "unit": "ns",
+            "range": "± 976.9164485095033"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Raw_DeleteSingleRow",
+            "value": 46252.333333333336,
+            "unit": "ns",
+            "range": "± 302.03381307798014"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow",
+            "value": 47848.730769230766,
+            "unit": "ns",
+            "range": "± 614.0330004495081"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Dapper_DeleteSingleRow",
+            "value": 57999.085106382976,
+            "unit": "ns",
+            "range": "± 6760.86535095577"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.SqlKata_DeleteSingleRow",
+            "value": 114623.27083333333,
+            "unit": "ns",
+            "range": "± 15693.444128699535"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.EfCore_DeleteSingleRow",
+            "value": 897417.847368421,
+            "unit": "ns",
+            "range": "± 177772.11506210602"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.EnumerableOverheadBenchmarks.AsyncEnumerable_AwaitForeach",
+            "value": 199549.49825846354,
+            "unit": "ns",
+            "range": "± 2690.51942445248"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.EnumerableOverheadBenchmarks.AsyncEnumerable_ToListAsync",
+            "value": 200669.83396559494,
+            "unit": "ns",
+            "range": "± 1057.1245618622675"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.EnumerableOverheadBenchmarks.Buffered_Direct",
+            "value": 207891.51243373327,
+            "unit": "ns",
+            "range": "± 1403.278113862092"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereActiveBenchmarks.Raw_WhereActive",
+            "value": 180528.94006347656,
+            "unit": "ns",
+            "range": "± 590.0973216358954"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereActiveBenchmarks.Quarry_WhereActive",
+            "value": 188399.10831705728,
+            "unit": "ns",
+            "range": "± 417.7050236289577"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereActiveBenchmarks.SqlKata_WhereActive",
+            "value": 205569.29319411056,
+            "unit": "ns",
+            "range": "± 1649.438702541819"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereActiveBenchmarks.Dapper_WhereActive",
+            "value": 222841.21897670202,
+            "unit": "ns",
+            "range": "± 1252.0435796154675"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereActiveBenchmarks.EfCore_WhereActive",
+            "value": 270433.7421875,
+            "unit": "ns",
+            "range": "± 1623.4720627566985"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById",
+            "value": 16227.190561147836,
+            "unit": "ns",
+            "range": "± 114.92421512492082"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Raw_WhereById",
+            "value": 16748.52466256278,
+            "unit": "ns",
+            "range": "± 126.58454921234625"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById_Parameterized",
+            "value": 17473.48599243164,
+            "unit": "ns",
+            "range": "± 243.81810207308735"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Dapper_WhereById",
+            "value": 22378.284539358956,
+            "unit": "ns",
+            "range": "± 133.07620168221885"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.SqlKata_WhereById",
+            "value": 45508.84380634014,
+            "unit": "ns",
+            "range": "± 412.2347089158751"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.EfCore_WhereById",
+            "value": 62911.82946777344,
+            "unit": "ns",
+            "range": "± 834.1177993908796"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereCompoundBenchmarks.Raw_WhereCompound",
+            "value": 78988.0924166166,
+            "unit": "ns",
+            "range": "± 560.8812579385799"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereCompoundBenchmarks.Quarry_WhereCompound",
+            "value": 84050.88452148438,
+            "unit": "ns",
+            "range": "± 549.6013550567504"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereCompoundBenchmarks.SqlKata_WhereCompound",
+            "value": 103632.83447265625,
+            "unit": "ns",
+            "range": "± 1342.027407643796"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereCompoundBenchmarks.Dapper_WhereCompound",
+            "value": 109985.4445539202,
+            "unit": "ns",
+            "range": "± 761.572158705081"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereCompoundBenchmarks.EfCore_WhereCompound",
+            "value": 158822.62376644736,
+            "unit": "ns",
+            "range": "± 3455.7324363437197"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertBatchBenchmarks.Raw_BatchInsert10",
+            "value": 110357,
+            "unit": "ns",
+            "range": "± 984.4368025332141"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertBatchBenchmarks.Quarry_BatchInsert10",
+            "value": 120645.80769230769,
+            "unit": "ns",
+            "range": "± 1146.7249295722859"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertBatchBenchmarks.SqlKata_BatchInsert10",
+            "value": 207297.35294117648,
+            "unit": "ns",
+            "range": "± 6695.253528511948"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertBatchBenchmarks.Dapper_BatchInsert10",
+            "value": 241498.94736842104,
+            "unit": "ns",
+            "range": "± 5177.175597151664"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertBatchBenchmarks.EfCore_BatchInsert10",
+            "value": 3479701.5061728396,
+            "unit": "ns",
+            "range": "± 330787.120149845"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertSingleBenchmarks.Raw_SingleInsert",
+            "value": 48870.833333333336,
+            "unit": "ns",
+            "range": "± 503.48311036641775"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertSingleBenchmarks.Quarry_SingleInsert",
+            "value": 52084.666666666664,
+            "unit": "ns",
+            "range": "± 647.5940554128493"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertSingleBenchmarks.Dapper_SingleInsert",
+            "value": 62313.769230769234,
+            "unit": "ns",
+            "range": "± 433.52511535207003"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertSingleBenchmarks.SqlKata_SingleInsert",
+            "value": 102514.3125,
+            "unit": "ns",
+            "range": "± 1239.547456063435"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertSingleBenchmarks.EfCore_SingleInsert",
+            "value": 1118384.8854166667,
+            "unit": "ns",
+            "range": "± 232483.13292193308"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinInnerBenchmarks.Dapper_InnerJoin",
+            "value": 110884.59545898438,
+            "unit": "ns",
+            "range": "± 1070.2971786589733"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinInnerBenchmarks.Raw_InnerJoin",
+            "value": 134590.17270132212,
+            "unit": "ns",
+            "range": "± 933.9922063838249"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinInnerBenchmarks.Quarry_InnerJoin",
+            "value": 144832.67578125,
+            "unit": "ns",
+            "range": "± 973.2940664357735"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinInnerBenchmarks.SqlKata_InnerJoin",
+            "value": 160714.74917367788,
+            "unit": "ns",
+            "range": "± 819.6399441137278"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinInnerBenchmarks.EfCore_InnerJoin",
+            "value": 216645.25127704328,
+            "unit": "ns",
+            "range": "± 1919.562599811363"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinThreeTableBenchmarks.Dapper_ThreeTableJoin",
+            "value": 349855.2381417411,
+            "unit": "ns",
+            "range": "± 1079.923594387273"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinThreeTableBenchmarks.Raw_ThreeTableJoin",
+            "value": 384027.1716120793,
+            "unit": "ns",
+            "range": "± 1638.4446415871182"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinThreeTableBenchmarks.Quarry_ThreeTableJoin",
+            "value": 401384.7706473214,
+            "unit": "ns",
+            "range": "± 1646.9209430436524"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinThreeTableBenchmarks.SqlKata_ThreeTableJoin",
+            "value": 428399.8787667411,
+            "unit": "ns",
+            "range": "± 5466.311829157377"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinThreeTableBenchmarks.EfCore_ThreeTableJoin",
+            "value": 531873.0335036058,
+            "unit": "ns",
+            "range": "± 3829.0258774358126"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationFirstPageBenchmarks.Raw_FirstPage",
+            "value": 33062.18978647085,
+            "unit": "ns",
+            "range": "± 143.05492649037404"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationFirstPageBenchmarks.Quarry_FirstPage",
+            "value": 36258.33828500601,
+            "unit": "ns",
+            "range": "± 214.75479674497066"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationFirstPageBenchmarks.Dapper_FirstPage",
+            "value": 42490.93198067801,
+            "unit": "ns",
+            "range": "± 212.84952001062447"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationFirstPageBenchmarks.SqlKata_FirstPage",
+            "value": 72912.8213266226,
+            "unit": "ns",
+            "range": "± 336.50263179320723"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationFirstPageBenchmarks.EfCore_FirstPage",
+            "value": 92416.61440805289,
+            "unit": "ns",
+            "range": "± 1037.2624890504158"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationLimitOffsetBenchmarks.Raw_LimitOffset",
+            "value": 33966.14823913574,
+            "unit": "ns",
+            "range": "± 81.60717572734438"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationLimitOffsetBenchmarks.Quarry_LimitOffset",
+            "value": 36232.147916353664,
+            "unit": "ns",
+            "range": "± 135.14794048014366"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationLimitOffsetBenchmarks.Dapper_LimitOffset",
+            "value": 42817.64813232422,
+            "unit": "ns",
+            "range": "± 170.9923594626489"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationLimitOffsetBenchmarks.SqlKata_LimitOffset",
+            "value": 73717.04239908855,
+            "unit": "ns",
+            "range": "± 284.38169994247914"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationLimitOffsetBenchmarks.EfCore_LimitOffset",
+            "value": 99021.4619140625,
+            "unit": "ns",
+            "range": "± 1142.1955012368333"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectAllBenchmarks.Raw_SelectAll",
+            "value": 191747.23803710938,
+            "unit": "ns",
+            "range": "± 705.4997767913137"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectAllBenchmarks.Quarry_SelectAll",
+            "value": 202148.8735914964,
+            "unit": "ns",
+            "range": "± 963.0221436313527"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectAllBenchmarks.SqlKata_SelectAll",
+            "value": 208932.51468331474,
+            "unit": "ns",
+            "range": "± 1237.3928554563481"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectAllBenchmarks.Dapper_SelectAll",
+            "value": 240396.78414481026,
+            "unit": "ns",
+            "range": "± 859.2414713652001"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectAllBenchmarks.EfCore_SelectAll",
+            "value": 263734.4549967448,
+            "unit": "ns",
+            "range": "± 957.9460198779263"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectProjectionBenchmarks.Raw_SelectProjection",
+            "value": 85347.23552058294,
+            "unit": "ns",
+            "range": "± 353.01783223716967"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectProjectionBenchmarks.Quarry_SelectProjection",
+            "value": 93267.98951134316,
+            "unit": "ns",
+            "range": "± 458.0455883407828"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectProjectionBenchmarks.SqlKata_SelectProjection",
+            "value": 103117.81944861778,
+            "unit": "ns",
+            "range": "± 480.8081769343997"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectProjectionBenchmarks.Dapper_SelectProjection",
+            "value": 118045.29809570312,
+            "unit": "ns",
+            "range": "± 594.7250754643919"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectProjectionBenchmarks.EfCore_SelectProjection",
+            "value": 151317.38333834134,
+            "unit": "ns",
+            "range": "± 1403.2366650671645"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetExceptBenchmarks.Raw_Except",
+            "value": 89534.04613385882,
+            "unit": "ns",
+            "range": "± 703.8832550574089"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetExceptBenchmarks.Quarry_Except",
+            "value": 95055.51168387277,
+            "unit": "ns",
+            "range": "± 681.0193032472766"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetExceptBenchmarks.Dapper_Except",
+            "value": 112174.88993617466,
+            "unit": "ns",
+            "range": "± 915.2479701774711"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetExceptBenchmarks.SqlKata_Except",
+            "value": 128342.43908691406,
+            "unit": "ns",
+            "range": "± 730.0680469609198"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetExceptBenchmarks.EfCore_Except",
+            "value": 187523.87491861978,
+            "unit": "ns",
+            "range": "± 1872.5001831364098"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetIntersectBenchmarks.Raw_Intersect",
+            "value": 119042.25332205636,
+            "unit": "ns",
+            "range": "± 707.8112296255784"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetIntersectBenchmarks.Quarry_Intersect",
+            "value": 123690.71099384014,
+            "unit": "ns",
+            "range": "± 409.23257675070687"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetIntersectBenchmarks.Dapper_Intersect",
+            "value": 139386.97248186384,
+            "unit": "ns",
+            "range": "± 1021.5936158965176"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetIntersectBenchmarks.SqlKata_Intersect",
+            "value": 151664.58164760045,
+            "unit": "ns",
+            "range": "± 1402.2145582049916"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetIntersectBenchmarks.EfCore_Intersect",
+            "value": 233999.96041165866,
+            "unit": "ns",
+            "range": "± 2232.690560095398"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetUnionAllBenchmarks.Raw_UnionAll",
+            "value": 72864.8512878418,
+            "unit": "ns",
+            "range": "± 195.06903605495165"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetUnionAllBenchmarks.Quarry_UnionAll",
+            "value": 86212.10086763822,
+            "unit": "ns",
+            "range": "± 307.243919310575"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetUnionAllBenchmarks.Dapper_UnionAll",
+            "value": 95005.79515729632,
+            "unit": "ns",
+            "range": "± 561.4481025391376"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetUnionAllBenchmarks.SqlKata_UnionAll",
+            "value": 113763.26896784856,
+            "unit": "ns",
+            "range": "± 742.8051984808973"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetUnionAllBenchmarks.EfCore_UnionAll",
+            "value": 179996.48274739584,
+            "unit": "ns",
+            "range": "± 3344.8084004290195"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringContainsBenchmarks.Raw_Contains",
+            "value": 33538.746032714844,
+            "unit": "ns",
+            "range": "± 99.05429741711447"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringContainsBenchmarks.Quarry_Contains",
+            "value": 34875.99754450871,
+            "unit": "ns",
+            "range": "± 191.97438935479533"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringContainsBenchmarks.Dapper_Contains",
+            "value": 38505.4674987793,
+            "unit": "ns",
+            "range": "± 201.33689414326076"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringContainsBenchmarks.SqlKata_Contains",
+            "value": 86620.42149939903,
+            "unit": "ns",
+            "range": "± 604.474639494429"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringContainsBenchmarks.EfCore_Contains",
+            "value": 99187.05149489183,
+            "unit": "ns",
+            "range": "± 778.0283080800141"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringStartsWithBenchmarks.Raw_StartsWith",
+            "value": 96307.42983572824,
+            "unit": "ns",
+            "range": "± 597.901297917728"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringStartsWithBenchmarks.Quarry_StartsWith",
+            "value": 106064.98583984375,
+            "unit": "ns",
+            "range": "± 924.2089632637859"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringStartsWithBenchmarks.Dapper_StartsWith",
+            "value": 128345.92816631611,
+            "unit": "ns",
+            "range": "± 458.18208312635346"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringStartsWithBenchmarks.SqlKata_StartsWith",
+            "value": 159655.07080078125,
+            "unit": "ns",
+            "range": "± 777.3920719353948"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringStartsWithBenchmarks.EfCore_StartsWith",
+            "value": 177019.31813401444,
+            "unit": "ns",
+            "range": "± 896.472303387929"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryCountBenchmarks.Raw_CountSubquery",
+            "value": 481329.70342548075,
+            "unit": "ns",
+            "range": "± 2506.1971493853052"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryCountBenchmarks.Quarry_CountSubquery",
+            "value": 482417.3046875,
+            "unit": "ns",
+            "range": "± 1199.9243624658452"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryCountBenchmarks.Dapper_CountSubquery",
+            "value": 486714.32589285716,
+            "unit": "ns",
+            "range": "± 3579.424947365446"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryCountBenchmarks.SqlKata_CountSubquery",
+            "value": 531033.8613978794,
+            "unit": "ns",
+            "range": "± 2735.975036383265"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryCountBenchmarks.EfCore_CountSubquery",
+            "value": 540618.9317220052,
+            "unit": "ns",
+            "range": "± 2980.81457447201"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryExistsBenchmarks.Raw_Exists",
+            "value": 318744.62855747767,
+            "unit": "ns",
+            "range": "± 2690.8992551638626"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryExistsBenchmarks.Quarry_Exists",
+            "value": 332059.19373497594,
+            "unit": "ns",
+            "range": "± 1543.5080170478702"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryExistsBenchmarks.Dapper_Exists",
+            "value": 341162.8623046875,
+            "unit": "ns",
+            "range": "± 1053.8757181620822"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryExistsBenchmarks.SqlKata_Exists",
+            "value": 377038.44301060267,
+            "unit": "ns",
+            "range": "± 3672.609257265403"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryExistsBenchmarks.EfCore_Exists",
+            "value": 399698.2016977164,
+            "unit": "ns",
+            "range": "± 3405.9077054715813"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryFilteredExistsBenchmarks.Raw_FilteredExists",
+            "value": 406471.1265055339,
+            "unit": "ns",
+            "range": "± 1247.9187978713383"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryFilteredExistsBenchmarks.Dapper_FilteredExists",
+            "value": 424600.09333147324,
+            "unit": "ns",
+            "range": "± 1424.259520069502"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryFilteredExistsBenchmarks.Quarry_FilteredExists",
+            "value": 432206.61560058594,
+            "unit": "ns",
+            "range": "± 1237.0967736573568"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryFilteredExistsBenchmarks.SqlKata_FilteredExists",
+            "value": 486707.23193359375,
+            "unit": "ns",
+            "range": "± 3140.277726681662"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryFilteredExistsBenchmarks.EfCore_FilteredExists",
+            "value": 714709.8225661058,
+            "unit": "ns",
+            "range": "± 7648.726750868437"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubquerySumBenchmarks.Raw_SumSubquery",
+            "value": 487563.5860072545,
+            "unit": "ns",
+            "range": "± 2012.710550378236"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubquerySumBenchmarks.Dapper_SumSubquery",
+            "value": 491806.68194110575,
+            "unit": "ns",
+            "range": "± 1406.3452315579934"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubquerySumBenchmarks.Quarry_SumSubquery",
+            "value": 492065.2410714286,
+            "unit": "ns",
+            "range": "± 2310.390285307365"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubquerySumBenchmarks.SqlKata_SumSubquery",
+            "value": 539866.2649489183,
+            "unit": "ns",
+            "range": "± 2314.6311146967837"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubquerySumBenchmarks.EfCore_SumSubquery",
+            "value": 939542.335797991,
+            "unit": "ns",
+            "range": "± 11383.624388456803"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ThroughputBenchmarks.Raw_Throughput",
+            "value": 16457230.55048077,
+            "unit": "ns",
+            "range": "± 91699.67017832576"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ThroughputBenchmarks.Quarry_Throughput",
+            "value": 18746714.39732143,
+            "unit": "ns",
+            "range": "± 96619.01520451608"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ThroughputBenchmarks.Dapper_Throughput",
+            "value": 23232950.51339286,
+            "unit": "ns",
+            "range": "± 155183.08869561847"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ThroughputBenchmarks.SqlKata_Throughput",
+            "value": 45204491.96875,
+            "unit": "ns",
+            "range": "± 1391372.8694022128"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ThroughputBenchmarks.EfCore_Throughput",
+            "value": 74215569.50980392,
+            "unit": "ns",
+            "range": "± 1206476.2630387559"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow_Inlined",
+            "value": 39358.53846153846,
+            "unit": "ns",
+            "range": "± 457.9295097473364"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Raw_UpdateSingleRow",
+            "value": 43256.59523809524,
+            "unit": "ns",
+            "range": "± 1019.6504256244835"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow",
+            "value": 43560.846153846156,
+            "unit": "ns",
+            "range": "± 687.2410841126334"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Dapper_UpdateSingleRow",
+            "value": 51208.692307692305,
+            "unit": "ns",
+            "range": "± 532.7866027806668"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.SqlKata_UpdateSingleRow",
+            "value": 126384.98,
+            "unit": "ns",
+            "range": "± 15511.348068710435"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.EfCore_UpdateSingleRow",
+            "value": 1025013.2371134021,
+            "unit": "ns",
+            "range": "± 184665.5128035988"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowLagBenchmarks.Dapper_Lag",
+            "value": 258802.9287860577,
+            "unit": "ns",
+            "range": "± 1468.5020191132373"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowLagBenchmarks.Raw_Lag",
+            "value": 364920.1227213542,
+            "unit": "ns",
+            "range": "± 1651.5368844324653"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowLagBenchmarks.Quarry_Lag",
+            "value": 386904.40880408656,
+            "unit": "ns",
+            "range": "± 1835.8989415557512"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowLagBenchmarks.SqlKata_Lag",
+            "value": 406594.9891826923,
+            "unit": "ns",
+            "range": "± 2618.415751696775"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowLagBenchmarks.EfCore_Lag",
+            "value": 454491.74762834824,
+            "unit": "ns",
+            "range": "± 7964.868386033421"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRankBenchmarks.Raw_Rank",
+            "value": 209675.26908052884,
+            "unit": "ns",
+            "range": "± 1036.8964671149486"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRankBenchmarks.Quarry_Rank",
+            "value": 228570.87184361048,
+            "unit": "ns",
+            "range": "± 1760.1560630971192"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRankBenchmarks.Dapper_Rank",
+            "value": 241464.44506835938,
+            "unit": "ns",
+            "range": "± 1452.831773676622"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRankBenchmarks.SqlKata_Rank",
+            "value": 260991.26332310267,
+            "unit": "ns",
+            "range": "± 3190.606815145235"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRankBenchmarks.EfCore_Rank",
+            "value": 299207.0626502404,
+            "unit": "ns",
+            "range": "± 2523.6379096530604"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRowNumberBenchmarks.Raw_RowNumber",
+            "value": 195641.598050631,
+            "unit": "ns",
+            "range": "± 692.5530208251471"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRowNumberBenchmarks.Quarry_RowNumber",
+            "value": 210505.38981745794,
+            "unit": "ns",
+            "range": "± 821.8790958148879"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRowNumberBenchmarks.Dapper_RowNumber",
+            "value": 224503.9249093192,
+            "unit": "ns",
+            "range": "± 1229.9031745343952"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRowNumberBenchmarks.SqlKata_RowNumber",
+            "value": 242143.1992938702,
+            "unit": "ns",
+            "range": "± 2025.4078436689003"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRowNumberBenchmarks.EfCore_RowNumber",
+            "value": 274912.46414620534,
+            "unit": "ns",
+            "range": "± 2837.685858748747"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRunningSumBenchmarks.Dapper_RunningSum",
+            "value": 220466.58289513222,
+            "unit": "ns",
+            "range": "± 1140.8628079998025"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRunningSumBenchmarks.Raw_RunningSum",
+            "value": 298756.7595563616,
+            "unit": "ns",
+            "range": "± 1609.8404139776915"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRunningSumBenchmarks.Quarry_RunningSum",
+            "value": 313522.0205078125,
+            "unit": "ns",
+            "range": "± 1536.9986860974127"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRunningSumBenchmarks.SqlKata_RunningSum",
+            "value": 338586.79736328125,
+            "unit": "ns",
+            "range": "± 5148.074576583367"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRunningSumBenchmarks.EfCore_RunningSum",
+            "value": 375616.29108072916,
+            "unit": "ns",
+            "range": "± 6938.993292541544"
           }
         ]
       }

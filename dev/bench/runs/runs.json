@@ -1,5 +1,11 @@
 [
   {
+    "sha": "3b765e5585196d8d4af3cb86f701f9c2ba507516",
+    "message": "Polish benchmark reports and remove dry run option",
+    "date": "2026-04-11T11:38:05-04:00",
+    "file": "2026-04-11-3b765e55.html"
+  },
+  {
     "sha": "1b09c7ad5f9bbdb7ea9b395ba2e9a80851ad933f",
     "message": "Add merged HTML reports, custom dashboard, and run history pages",
     "date": "2026-04-11T10:22:46-04:00",

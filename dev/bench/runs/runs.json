@@ -1,5 +1,11 @@
 [
   {
+    "sha": "8a42a8457328dea005369a43d2a0b10731dffa60",
+    "message": "Fix generator bugs, improve build perf, and consolidate code (#254)",
+    "date": "2026-04-11T23:54:46-04:00",
+    "file": "2026-04-12-8a42a845.html"
+  },
+  {
     "sha": "77030fa3d0102d4bcc359a1e91328c752a11ccc4",
     "message": "Add light/dark mode support to benchmark pages",
     "date": "2026-04-11T16:18:47-04:00",

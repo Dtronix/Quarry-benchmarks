@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775942773923,
+  "lastUpdate": 1775969144606,
   "repoUrl": "https://github.com/Dtronix/Quarry",
   "entries": {
     "Quarry Benchmarks": [
@@ -524,6 +524,268 @@ window.BENCHMARK_DATA = {
             "value": 316312.12677873886,
             "unit": "ns",
             "range": "± 2121.0776228117948"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "DJGosnell",
+            "username": "DJGosnell",
+            "email": "DJGosnell@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "8a42a8457328dea005369a43d2a0b10731dffa60",
+          "message": "Fix generator bugs, improve build perf, and consolidate code (#254)\n\n* Fix SubqueryExpr parameter extraction and collection traversal\n\n- ExtractSubqueryParameters now processes sub.Selector in addition to\n  sub.Predicate, fixing aggregate subqueries with captured variables\n  (e.g., u.Orders.Sum(o => o.Total * discount))\n- Preserve ImplicitJoins via WithImplicitJoins() on SubqueryExpr\n  reconstruction, fixing HasManyThrough navigations in subquery predicates\n- Remove early-return when Predicate is null so selectors with captured\n  values are still extracted\n- Add RawCallExpr case to CollectParamsRecursive so Sql.Raw<T>()\n  arguments are included in parameter collection\n- Add sub.Selector recursion to CollectParamsRecursive for SubqueryExpr\n\n* Fix equality gaps in AssembledPlan and QueryParameter\n\nAssembledPlan.Equals now includes 8 previously missing immutable\nproperties: IsTraced, BatchInsertReturningSuffix, BatchInsertColumnsPerRow,\nExecutionSite, ClauseSites, PreparedTerminals, PrepareSite, InsertInfo.\nThese all affect generated code and were causing the incremental pipeline\nto serve stale cached output when only these properties changed.\n\nQueryParameter.Equals now includes 4 previously missing immutable\nproperties: EntityPropertyExpression, NeedsUnsafeAccessor,\nIsDirectAccessible, CollectionAccessExpression. These control parameter\naccess code generation paths.\n\n* Cache GetClauseEntries() result on AssembledPlan\n\nAdd lazy-initialized backing field so GetClauseEntries() builds the\nclause entry list once and returns the cached result on subsequent calls.\nEliminates ~6+N redundant list allocations per chain during emission\n(called from FileEmitter, CarrierEmitter, and TerminalEmitHelpers).\n\n* Pre-compute site params and conditional map on AssembledPlan\n\nMove ResolveSiteParams logic into a cached dictionary on AssembledPlan,\neliminating O(N^2) per-site iteration during emission. Move\nBuildParamConditionalMap similarly. Both are now computed once on first\naccess and returned from cache on subsequent calls.\n\nResolveSiteParams and BuildParamConditionalMap in TerminalEmitHelpers\nnow delegate to the cached methods. The diagnostic clause offset\ncomputation also reuses the cached map.\n\n* Include all equality-significant fields in SqlExpr node hashes\n\nParamSlotExpr: add ExpressionPath, ElementTypeName, CustomTypeMappingClass,\nIsEnum, EnumUnderlyingType to hash (were in DeepEquals but not hash).\nSwitch to HashCode builder pattern for >8 fields.\n\nCapturedValueExpr: add ClrType and IsStaticField to hash.\n\nLikeExpr: add LikePrefix, LikeSuffix, NeedsEscape to hash.\nSwitch to HashCode builder pattern.\n\nReduces spurious hash collisions that force expensive DeepEquals calls\nduring incremental build caching.\n\n* Unify terminal eligibility checks between FileEmitter and CarrierEmitter\n\nFileEmitter now delegates to CarrierEmitter.WouldExecutionTerminalBeEmitted()\nfor execution terminal eligibility instead of maintaining parallel inline\nchecks. This eliminates the risk of the two paths diverging when new\nterminal kinds are added or eligibility logic changes.\n\nThe per-kind TRACE comments are simplified to a single message since\nthe detailed diagnostics were development aids.\n\n* Extract shared patterns: projection param remapping and SQL literal formatter\n\nChainAnalyzer: extract RemapProjectionParameters() helper replacing two\nidentical 30-line blocks in AnalyzeChainGroup and AnalyzeOperandChain.\n\nSQL literal formatting: consolidate FormatConstantAsSqlLiteralSimple\n(UsageSiteDiscovery) and FormatConstantForSql (ProjectionAnalyzer) into\na shared SqlLikeHelpers.FormatConstantAsSqlLiteral method with the\nsuperset of type coverage. EscapeSqlString also moved to shared location.\nEach caller retains its own fallback behavior for unsupported types.\n\nUpdate FormatConstantTests to reference the new shared method location.\n\n* Small improvements: StringBuilder reuse, catch specificity, ternary marker\n\nSqlExprRenderer: add RenderTo(StringBuilder) overload so callers with\nan existing StringBuilder can avoid intermediate string allocations.\nExisting Render() delegates to it.\n\nSqlExprAnnotator: change three bare catch blocks to catch (Exception)\nto avoid swallowing fatal CLR exceptions (OutOfMemoryException, etc.).\nGraceful degradation behavior is preserved for normal exceptions.\n\nSqlExprParser: replace raw C# ternary syntax in SqlRawExpr with a clear\ncomment marker. The ternary expression was being emitted as raw C# text\nwhich is always invalid SQL.\n\n* Add tests for SubqueryExpr parameter extraction and collection\n\nAdd 6 tests covering the C1/C2/C5 bug fixes:\n- CollectParameters recurses into SubqueryExpr.Selector\n- CollectParameters recurses into both Predicate and Selector\n- CollectParameters recurses into RawCallExpr.Arguments\n- ExtractParameters parameterizes CapturedValueExpr in Selector\n- ExtractParameters handles both Predicate and Selector params\n- ExtractParameters preserves ImplicitJoins on resolved SubqueryExpr\n\n* Update workflow.md with PR number\n\n* chore: remove session artifacts before merge",
+          "timestamp": "2026-04-12T03:54:46Z",
+          "url": "https://github.com/Dtronix/Quarry/commit/8a42a8457328dea005369a43d2a0b10731dffa60"
+        },
+        "date": 1775969144241,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateAvgBenchmarks.Quarry_Avg",
+            "value": 18430.13631984166,
+            "unit": "ns",
+            "range": "± 114.21938442971353"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateCountBenchmarks.Quarry_Count",
+            "value": 8121.230662754604,
+            "unit": "ns",
+            "range": "± 61.246723068431194"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateSumBenchmarks.Quarry_Sum",
+            "value": 18636.10010939378,
+            "unit": "ns",
+            "range": "± 195.50317890919692"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ColdStartBenchmarks.Quarry_ColdStart",
+            "value": 204236.99823869977,
+            "unit": "ns",
+            "range": "± 1136.1973062232794"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexJoinFilterPaginateBenchmarks.Quarry_JoinFilterPaginate",
+            "value": 34720.55680025541,
+            "unit": "ns",
+            "range": "± 372.2825230320783"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexMultiJoinAggregateBenchmarks.Quarry_MultiJoinAggregate",
+            "value": 53270.29652622768,
+            "unit": "ns",
+            "range": "± 480.68172268937195"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ConditionalBranchBenchmarks.Quarry_ConditionalQuery",
+            "value": 88852.19200032552,
+            "unit": "ns",
+            "range": "± 1364.0041185722832"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteMultiBenchmarks.Quarry_MultiCte",
+            "value": 110909.61717006138,
+            "unit": "ns",
+            "range": "± 753.5245247888647"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteProjectionBenchmarks.Quarry_CteProjection",
+            "value": 107452.5229304387,
+            "unit": "ns",
+            "range": "± 555.7952963251944"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteSimpleBenchmarks.Quarry_SimpleCte",
+            "value": 109582.45127516527,
+            "unit": "ns",
+            "range": "± 530.5205612617762"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow_Inlined",
+            "value": 43868.92307692308,
+            "unit": "ns",
+            "range": "± 477.92476073444544"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow",
+            "value": 47498.230769230766,
+            "unit": "ns",
+            "range": "± 667.0078902389579"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereActiveBenchmarks.Quarry_WhereActive",
+            "value": 192068.74487304688,
+            "unit": "ns",
+            "range": "± 1546.7774512496521"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById",
+            "value": 16059.268820626396,
+            "unit": "ns",
+            "range": "± 141.6708901390048"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById_Parameterized",
+            "value": 17829.576455923227,
+            "unit": "ns",
+            "range": "± 102.62488310417346"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereCompoundBenchmarks.Quarry_WhereCompound",
+            "value": 84198.53503417969,
+            "unit": "ns",
+            "range": "± 729.2205605005062"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertBatchBenchmarks.Quarry_BatchInsert10",
+            "value": 125312.35820895522,
+            "unit": "ns",
+            "range": "± 5891.815136018349"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertSingleBenchmarks.Quarry_SingleInsert",
+            "value": 53846.07692307692,
+            "unit": "ns",
+            "range": "± 659.2484940620471"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinInnerBenchmarks.Quarry_InnerJoin",
+            "value": 140764.61513264975,
+            "unit": "ns",
+            "range": "± 276.90515749567476"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinThreeTableBenchmarks.Quarry_ThreeTableJoin",
+            "value": 401077.70685686386,
+            "unit": "ns",
+            "range": "± 3332.447898384481"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationFirstPageBenchmarks.Quarry_FirstPage",
+            "value": 35804.29274204799,
+            "unit": "ns",
+            "range": "± 518.6284053903864"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationLimitOffsetBenchmarks.Quarry_LimitOffset",
+            "value": 36663.02092197963,
+            "unit": "ns",
+            "range": "± 384.0509731039926"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectAllBenchmarks.Quarry_SelectAll",
+            "value": 207263.9966008113,
+            "unit": "ns",
+            "range": "± 1233.743382978451"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectProjectionBenchmarks.Quarry_SelectProjection",
+            "value": 93973.28327287946,
+            "unit": "ns",
+            "range": "± 864.2656846471115"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetExceptBenchmarks.Quarry_Except",
+            "value": 94862.49764578683,
+            "unit": "ns",
+            "range": "± 697.7502431462439"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetIntersectBenchmarks.Quarry_Intersect",
+            "value": 127062.32305438702,
+            "unit": "ns",
+            "range": "± 1048.6392882750317"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetUnionAllBenchmarks.Quarry_UnionAll",
+            "value": 82337.27980259487,
+            "unit": "ns",
+            "range": "± 480.2906619647514"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringContainsBenchmarks.Quarry_Contains",
+            "value": 35352.39362880162,
+            "unit": "ns",
+            "range": "± 293.0077460005778"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringStartsWithBenchmarks.Quarry_StartsWith",
+            "value": 103441.38658728966,
+            "unit": "ns",
+            "range": "± 374.4036280342396"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryCountBenchmarks.Quarry_CountSubquery",
+            "value": 483720.86568777903,
+            "unit": "ns",
+            "range": "± 2044.3060113102752"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryExistsBenchmarks.Quarry_Exists",
+            "value": 324932.9901216947,
+            "unit": "ns",
+            "range": "± 1433.2006594021877"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryFilteredExistsBenchmarks.Quarry_FilteredExists",
+            "value": 423178.3008161272,
+            "unit": "ns",
+            "range": "± 2790.0021215306633"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubquerySumBenchmarks.Quarry_SumSubquery",
+            "value": 492157.8068498884,
+            "unit": "ns",
+            "range": "± 4702.169516800272"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ThroughputBenchmarks.Quarry_Throughput",
+            "value": 18506570.588541668,
+            "unit": "ns",
+            "range": "± 59867.93690974016"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow_Inlined",
+            "value": 38339.75,
+            "unit": "ns",
+            "range": "± 565.2703496397261"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow",
+            "value": 43688.90909090909,
+            "unit": "ns",
+            "range": "± 1030.7581541246095"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowLagBenchmarks.Quarry_Lag",
+            "value": 372310.8194405692,
+            "unit": "ns",
+            "range": "± 2592.2589624069674"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRankBenchmarks.Quarry_Rank",
+            "value": 232435.26374162946,
+            "unit": "ns",
+            "range": "± 1366.232153086673"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRowNumberBenchmarks.Quarry_RowNumber",
+            "value": 215140.70079627403,
+            "unit": "ns",
+            "range": "± 1139.801685014801"
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRunningSumBenchmarks.Quarry_RunningSum",
+            "value": 314353.35518973216,
+            "unit": "ns",
+            "range": "± 1915.81348889042"
           }
         ]
       }

@@ -1,5 +1,11 @@
 [
   {
+    "sha": "f7db32420c8eb90b4209af606eb410c181633443",
+    "message": "Add std-dev band, per-chart unit selection, and larger cards to dashboard",
+    "date": "2026-04-12T10:54:49-04:00",
+    "file": "2026-04-12-f7db3242.html"
+  },
+  {
     "sha": "444c72b388b57e76a278b3e1b0fac884ae8b8adb",
     "message": "Mark raw-SQL fallback benchmarks and align report columns",
     "date": "2026-04-12T10:25:31-04:00",

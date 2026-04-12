@@ -1,5 +1,11 @@
 [
   {
+    "sha": "444c72b388b57e76a278b3e1b0fac884ae8b8adb",
+    "message": "Mark raw-SQL fallback benchmarks and align report columns",
+    "date": "2026-04-12T10:25:31-04:00",
+    "file": "2026-04-12-444c72b3.html"
+  },
+  {
     "sha": "8a42a8457328dea005369a43d2a0b10731dffa60",
     "message": "Fix generator bugs, improve build perf, and consolidate code (#254)",
     "date": "2026-04-11T23:54:46-04:00",

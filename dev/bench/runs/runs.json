@@ -1,5 +1,11 @@
 [
   {
+    "sha": "9a458dfc857154c16ede20a3748fbaf08b5a5fc3",
+    "message": "Collapse carrier list path to one state machine and drop SequentialAccess (#255)",
+    "date": "2026-04-16T18:58:35-04:00",
+    "file": "2026-04-16-9a458dfc.html"
+  },
+  {
     "sha": "f7db32420c8eb90b4209af606eb410c181633443",
     "message": "Add std-dev band, per-chart unit selection, and larger cards to dashboard",
     "date": "2026-04-12T10:54:49-04:00",

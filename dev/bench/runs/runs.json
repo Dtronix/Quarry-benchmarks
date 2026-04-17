@@ -1,5 +1,11 @@
 [
   {
+    "sha": "fd917c658332ca1b30a5598ad1decfe75f20fa7e",
+    "message": "Add README.md for Quarry-benchmarks repo and deploy it from CI",
+    "date": "2026-04-17T08:57:13-04:00",
+    "file": "2026-04-17-fd917c65.html"
+  },
+  {
     "sha": "9a458dfc857154c16ede20a3748fbaf08b5a5fc3",
     "message": "Collapse carrier list path to one state machine and drop SequentialAccess (#255)",
     "date": "2026-04-16T18:58:35-04:00",

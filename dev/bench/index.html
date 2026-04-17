@@ -386,7 +386,11 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          interaction: { mode: 'nearest', intersect: true },
+          // Index-mode interaction: hovering anywhere in a commit column
+          // surfaces both the Mean and Allocated points for that x. Avoids
+          // the stale-tooltip quirk that occurs crossing between points on
+          // different Y axes under nearest/intersect mode.
+          interaction: { mode: 'index', intersect: false },
           onClick: (evt, elements, chart) => {
             if (elements.length === 0) return;
             // Accept a hit on either the Mean or Allocated line — both

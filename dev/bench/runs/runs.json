@@ -1,5 +1,11 @@
 [
   {
+    "sha": "9315347759af35118d6efc716787a7ffe22be0fb",
+    "message": "Add docs-validation sample; correct Many<T> aggregate doc examples",
+    "date": "2026-04-21T20:14:10-04:00",
+    "file": "2026-04-22-93153477.html"
+  },
+  {
     "sha": "f9a97e8e3984994668c876454dffd17deb0d58c0",
     "message": "Mark v0.3.0 as released (2026-04-21)",
     "date": "2026-04-21T19:45:26-04:00",

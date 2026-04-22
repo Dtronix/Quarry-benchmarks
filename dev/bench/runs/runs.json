@@ -1,5 +1,11 @@
 [
   {
+    "sha": "f9a97e8e3984994668c876454dffd17deb0d58c0",
+    "message": "Mark v0.3.0 as released (2026-04-21)",
+    "date": "2026-04-21T19:45:26-04:00",
+    "file": "2026-04-21-f9a97e8e.html"
+  },
+  {
     "sha": "fd917c658332ca1b30a5598ad1decfe75f20fa7e",
     "message": "Add README.md for Quarry-benchmarks repo and deploy it from CI",
     "date": "2026-04-17T08:57:13-04:00",

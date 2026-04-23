@@ -1,5 +1,11 @@
 [
   {
+    "sha": "e4354a41badcb6f897a0e19e5b90287f95838eb0",
+    "message": "Support Sql.Raw<T> in Select projections (#256) (#262)",
+    "date": "2026-04-23T16:33:13-04:00",
+    "file": "2026-04-23-e4354a41.html"
+  },
+  {
     "sha": "4daf62d0a1b7993338ba4ea25a8601155dbda74f",
     "message": "Fix MigrationRunner bind-parameter mismatch on Npgsql 10 (GH-258) (#261)",
     "date": "2026-04-23T15:43:31-04:00",

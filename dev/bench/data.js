@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1776976557338,
+  "lastUpdate": 1776979520255,
   "repoUrl": "https://github.com/Dtronix/Quarry",
   "entries": {
     "Quarry Benchmarks": [
@@ -3019,6 +3019,308 @@ window.BENCHMARK_DATA = {
             "value": 301570.2028808594,
             "unit": "ns",
             "range": "± 4542.001741592252",
+            "allocated": 16048
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "DJGosnell",
+            "email": "DJGosnell@users.noreply.github.com",
+            "username": "DJGosnell"
+          },
+          "committer": {
+            "name": "GitHub",
+            "email": "noreply@github.com",
+            "username": "web-flow"
+          },
+          "id": "e4354a41badcb6f897a0e19e5b90287f95838eb0",
+          "message": "Support Sql.Raw<T> in Select projections (#256) (#262)\n\n* Support Sql.Raw<T> in single-entity Select projections (#256)\n\nPreviously, Sql.Raw<T> used inside a Select tuple/DTO/object-init projection\nsilently rendered as an empty string literal in the generated SQL\n(e.g., SELECT \"OrderId\", \"\" FROM \"orders\") because ProjectionAnalyzer fell\nthrough to the generic fallback where columnName=\"\" and the raw C# source\nwas placed in SqlExpression then later stripped.\n\nAdd a Raw case to GetAggregateInfo that parses each template argument via\nSqlExprParser, walks the resulting SqlExpr tree with a projection-aware\nrenderer, and substitutes {0}/{1}/... template placeholders with canonical\n{ColumnName} identifier placeholders (dialect-resolved later), @__proj{N}\nparameter placeholders for captured runtime vars, and inline literals for\ncompile-time constants. Binary ops, unary ops, function calls, IS NULL, IN,\nand LIKE expressions render inline so args like u.Price * 2 are supported.\n\nThe generic T type argument on Sql.Raw<T> determines the column CLR type;\ntemplate/arg count mismatches fail via RawCallExpr.Validate().\n\nCovers tuple, DTO, object-initializer, and single-column projection forms\nfor single-entity Select (joined projections follow in a separate commit).\n\nTask #1 of 3 in #256 workflow.\n\n* Support Sql.Raw<T> in joined and single-column Select projections (#256)\n\nAdd a Raw case to GetJoinedAggregateInfo that resolves column references\nto canonical {alias}.{ColumnName} placeholders using the per-parameter\nlookup. The shared BuildSqlRawInfo helper and the SqlExpr tree walker from\nPhase 1 are reused via a column-resolver delegate — only the column\nresolution differs between single-entity and joined contexts.\n\nSingle-column projections (e.g., .Select(u => Sql.Raw<string>(...)))\nalready route through GetAggregateInfo via AnalyzeInvocation, so no\nadditional change is needed; joined single-column does the same via\nAnalyzeJoinedInvocation → ResolveJoinedAggregate → GetJoinedAggregateInfo.\n\nAdd sanity tests for joined-tuple and single-column forms; the existing\ncolumn-reference sanity test from Phase 1 covers single-entity tuple form.\n\nTask #2 of 3 in #256 workflow.\n\n* Cross-dialect test coverage for Sql.Raw<T> in Select projections (#256)\n\nAdd 6 tests to complement the sanity tests from Phases 1+2, covering the\nfull surface of the fix:\n\n- Multiple column references — Sql.Raw<string>(\"coalesce({0}, {1})\", ...)\n- Captured variable — verifies @__proj{N} local placeholders are remapped\n  to dialect-specific parameter placeholders (@p0 / $1 / ?)\n- Literal parameter — compile-time constant inlines as SQL literal\n- No placeholders — template with no {N} substitutions passes through\n- DTO initializer — new UserSummaryDto { ... = Sql.Raw<string>(...) }\n- Binary op arg — u.UserId * 10 exercises the IR-based arg tree walker\n\nAll 9 tests (3 from Phases 1+2 + 6 added here) assert SQL output across\nSQLite, PostgreSQL, MySQL, and SqlServer.\n\nTask #3 of 3 in #256 workflow.\n\n* Remediate review findings for Sql.Raw<T> Select projection (#256)\n\nAddress review findings from _sessions/256-fix-sql-raw-select-projection/review.md:\n\n- Fail-loud fallback (#3): AnalyzeProjectedExpression returns null for a\n  methodName==\"Raw\" whose GetAggregateInfo returned null, preventing the\n  generic type-info fallback from producing an empty-column ProjectedColumn\n  that would regress the original #256 bug. AnalyzeInvocation emits a\n  specific CreateFailed message for the single-column path.\n\n- Captured-var typing (#4, #8, #16): RenderRawArgToCanonical tries\n  ResolveScalarArgSql first for simple scalar args (identifiers, literals,\n  captured members). This consults the semantic model for authoritative CLR\n  types rather than the SqlExprParser default of \"object\", so a captured\n  DateTime landed in ParameterInfo as \"object\" becomes \"DateTime\".\n\n- Dialect-aware booleans (#5): FormatLiteralForProjection emits canonical\n  {@BOOLT}/{@BOOLF} placeholders rather than per-dialect bool text.\n  QuoteSqlExpression resolves the placeholder to TRUE/FALSE on PostgreSQL\n  and 1/0 elsewhere. Because projection analysis runs at a fixed discovery\n  dialect, emitting dialect-rendered text at analysis time would embed the\n  wrong value in the cached SqlExpression.\n\n- String-concat guard (#6): RenderRawArgNode's Add walker bails to null if\n  either operand is a string/char typed literal or captured; the projection\n  fails loudly rather than emitting \"a + b\" which is invalid on MySQL/SqlServer.\n  Users who want string concat should write it in the template text.\n\n- Validation refactor (#7): Replaced the throwaway RawCallExpr shell with a\n  dedicated IsRawTemplateValid helper. Transient shell is now isolated to\n  one helper with clear scope.\n\n- T=\"object\" guard (#21): TryExtractSqlRawTypeArg returns null rather than\n  \"object\" when T is unresolvable. BuildSqlRawInfo then fails the projection\n  loudly instead of letting ChainAnalyzer.TryResolveAggregateTypeFromSql\n  misinfer a CLR type from SUM/MIN/MAX substrings in the user's template.\n\n- Tests: Add Select_SqlRaw_BooleanLiteralArg_DialectAware (#5, #13) and\n  Select_SqlRaw_CapturedVariable_TypeInferredFromSemanticModel (#4, #12, #14).\n\nReview classifications + Action Taken recorded in\n_sessions/256-fix-sql-raw-select-projection/review.md §Classifications.\nAll 3253 tests pass (3242 baseline + 11 Sql.Raw projection tests).\n\n* Record PR #262 in workflow state (#256)\n\n* Back-step REMEDIATE → REVIEW for session 2 re-analysis (#256)\n\nUser declined to finalize PR #262 and requested a fresh full\nreview. Archived prior review.md to review-session1.md; workflow\nphase reset to REVIEW.\n\n* Make Sql.Raw projection walker fail loudly on unsupported args (#256)\n\nReview session 2 findings #4, #8.\n\nThe projection-arg walker used to emit `SqlRawExpr.SqlText` verbatim\nwhen it reached a node the parser could not translate. Since\n`SqlExprParser` falls through to `new SqlRawExpr(expression.ToString())`\nfor C# ternaries, unknown invocations, postfix unary (other than `!`),\narray-creation without initializer, element access, and interpolated\nstrings, any of those inside `Sql.Raw<T>(template, arg)` would leak the\nC# source text — e.g. `/* unsupported: C# ternary expression */` or\n`u.Foo(x)` — into the generated SQL. This reproduces the exact class of\nsilent-wrong-SQL bug this PR fixes. The walker now returns null for\n`SqlRawExpr`, forcing the caller to bail out.\n\nThe string-concat Add guard now also checks `ColumnRefExpr` operands\nvia a new `isStringColumn` delegate threaded alongside the existing\ncolumn resolver. Previously only direct string literals and captured\nstring locals were caught, so `Sql.Raw<string>(\"{0}\", u.FirstName + u.LastName)`\nwould still emit `(\"FirstName\" + \"LastName\")` — invalid on MySQL and\nSqlServer. The guard now bails on any string-typed operand: literal,\ncaptured, or column.\n\nBoth `RenderRawArgToCanonical` and `RenderRawArgToCanonicalJoined`\nreceive an `isStringColumn` delegate that closes over the column\nlookup for the current context; `IsStringColumnRef` and\n`IsJoinedStringColumnRef` implement the two contexts.\n\n* Propagate IsStaticField and ExpressionPath for Sql.Raw captured vars (#256)\n\nReview session 2 findings #2, #9, #17.\n\n`AddCapturedAsProjectionParameter` now mirrors the ParameterInfo\nconstruction in `SqlExprClauseTranslator.ExtractParametersCore`\n(SqlExprClauseTranslator.cs:88-92) so captured-variable metadata\npropagates consistently across the Where-path and Select-projection\npaths:\n\n- `ExpressionPath = captured.ExpressionPath` — needed by the parameter\n  binder to emit direct-path navigation code for deep captures like\n  `obj.Inner.Field`.\n- `IsStaticCapture = captured.IsStaticField` — controls whether\n  UnsafeAccessor uses StaticField kind (null target) vs Field kind\n  (func.Target).\n\nLatent today: the walker path is only reached for captured variables\nthat are NOT direct identifiers or parameter-prefixed member accesses\n(the fast-path in RenderRawArgToCanonical delegates those to\nResolveScalarArgSql). Remaining walker captures are rare (function-call\nargs, operator arms) and SqlExprParser never sets IsStaticField=true in\nthe current code. The fix aligns the projection path with the canonical\npattern so future parser changes or more complex Raw arg shapes don't\nsilently drop capture metadata.\n\n* Tighten bool-literal detection and operator-table fallback (#256)\n\nReview session 2 findings #6, #7.\n\n`FormatLiteralForProjection` previously treated `\"TRUE\"`, `\"true\"`, and\n`\"1\"` as truthy, but `SqlExprParser.ParseLiteral` only ever emits\n`\"TRUE\"` or `\"FALSE\"` for bool literals (SqlExprParser.cs:270-274). The\nextra checks were dead and added cognitive load — now only `\"TRUE\"`\nmaps to `{@BOOLT}`, everything else to `{@BOOLF}`.\n\n`GetRawBinaryOperator` used to return `\"?\"` for any unmapped\n`SqlBinaryOperator`, which is the MySQL parameter placeholder and\nwould parse into unrelated runtime behavior — the exact silent-\nwrong-SQL failure mode this PR fixes. It now throws\n`ArgumentOutOfRangeException`, so any future operator addition that\nforgets to update the table will fail the build rather than emit\ngarbage SQL.\n\n* Emit QRY029 for Sql.Raw template errors in Select projections (#256)\n\nReview session 2 finding #1.\n\nWhere-path `Sql.Raw` calls surface template errors (placeholder/\nargument count mismatch) as QRY029 compile-time errors via\n`PipelineOrchestrator.CollectTranslatedDiagnostics`, because the raw\nsite's `Expression` is a `RawCallExpr` that runs `Validate()`. Select-\nprojection `Sql.Raw` calls were silent — `ProjectionAnalyzer.\nBuildSqlRawInfo` validated via a transient `RawCallExpr` shell and, on\nfailure, discarded both the shell and the error, returning `(null, null)`.\nThe projection then failed analysis and the chain degraded to runtime\nbuild, leaving no user-visible diagnostic.\n\n`GetRawTemplateValidationError` now returns the `Validate()` message\n(the same string the Where path shows). `BuildSqlRawInfo` records the\nmessage via a thread-static accumulator modeled on `PipelineErrorBag`.\nPublic entry points in `ProjectionAnalyzer` drain the accumulator and\nattach the messages to the returned `ProjectionInfo` via a new init-\nonly `SqlRawValidationErrors` property. `PipelineOrchestrator` emits\nQRY029 per entry, scoped to the Select call's location.\n\nScope note: QRY029 is attached to the Select call location rather\nthan the individual `Sql.Raw` call site — less precise than the\nWhere path, but sufficient to locate the bad template in the lambda.\n\nAdded `ProjectionFailureReason.SqlRawValidationError` for future callers\nthat want to distinguish this degradation class; current pipeline\nreads from `SqlRawValidationErrors` directly.\n\n* Test remediation coverage for Sql.Raw Select projection (#256)\n\nReview session 2 findings #11, #12, #14.\n\nUsageSiteDiscoveryTests.cs (#11):\nThree new QRY029 tests for projection-path Sql.Raw:\n- Too many arguments\n- Too few arguments\n- Non-sequential placeholders ({0}, {2} skipping {1})\nAll assert QRY029 fires and the message matches the RawCallExpr.Validate\ntext, mirroring the existing Where-path tests.\n\nCrossDialectMiscTests.cs (#12, #14):\n- Select_SqlRaw_CapturedVariable_TypeInferredFromSemanticModel now also\n  asserts Name, Value, IsCollection, IsEnum, and executes the query at\n  runtime to verify the captured DateTime round-trips through the\n  parameter binder (shallow-test remediation).\n- Select_SqlRaw_Joined_MultipleArgs — joined projection with three\n  args from a literal, u.UserName, and o.Status. Exercises\n  ResolveJoinedColumnRefToPlaceholder for two distinct lambda params.\n- Select_SqlRaw_Joined_WithCapturedVariable — joined projection with a\n  captured int threshold in the Raw arg. Exercises\n  IsScalarArgCandidateJoined and the fast-path delegation in the\n  joined context.\n\nManifest regeneration reflects the three new cross-dialect queries.\n\n* Share binary-operator table between SqlExprRenderer and Sql.Raw walker (#256)\n\nReview session 2 finding #16 (scoped).\n\nThe Sql.Raw projection walker used to carry its own copy of the\nSqlBinaryOperator → text table (`GetRawBinaryOperator`). Any future\noperator addition would require updating both it and\n`SqlExprRenderer.GetSqlOperator`, and any dialect-specific fix in the\nrenderer (e.g., the string-concat TODO at SqlExprRenderer.cs:290)\nwould bypass the walker. `GetSqlOperator` is now `internal` and\ncalled directly from the walker.\n\nThe renderer's fallback was also tightened to throw\n`ArgumentOutOfRangeException` rather than emit `\"?\"` — matching the\nwalker's stricter contract and preventing an unmapped operator from\nsilently rendering as the MySQL parameter placeholder.\n\nFull consolidation of the remaining shape-level duplication\n(IN/LIKE/IS NULL/function-call/unary emission) is out of scope: those\nrender paths in SqlExprRenderer invoke dialect-sensitive recursion\nthat the canonical walker must not enter. Tracked as a follow-up in\nthe walker's docstring: to share the rest, SqlExprRenderer would need\na canonical-projection output mode with delegate hooks for column\nresolution, captured-value accumulation, and literal rendering.\n\n* Record Action Taken for session 2 review findings (#256)\n\nPopulates the review.md Classifications table with a concise description\nof how each A/B finding was addressed (or why D findings were left\nalone). Session 2 remediation complete — ready to finalize.\n\n* Save PR #262 body draft alongside session artifacts (#256)\n\n* Update workflow.md for session 2 REMEDIATE completion (#256)\n\n* chore: remove session artifacts before merge",
+          "timestamp": "2026-04-23T20:33:13Z",
+          "url": "https://github.com/Dtronix/Quarry/commit/e4354a41badcb6f897a0e19e5b90287f95838eb0"
+        },
+        "date": 1776979520234,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateAvgBenchmarks.Quarry_Avg",
+            "value": 18049.290252685547,
+            "unit": "ns",
+            "range": "± 83.05090261773152",
+            "allocated": 960
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateCountBenchmarks.Quarry_Count",
+            "value": 8449.740473066058,
+            "unit": "ns",
+            "range": "± 96.74604228233693",
+            "allocated": 936
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateSumBenchmarks.Quarry_Sum",
+            "value": 19154.04149881999,
+            "unit": "ns",
+            "range": "± 87.22808266127744",
+            "allocated": 960
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ColdStartBenchmarks.Quarry_ColdStart",
+            "value": 190911.24952915736,
+            "unit": "ns",
+            "range": "± 1158.0008843474477",
+            "allocated": 27152
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexJoinFilterPaginateBenchmarks.Quarry_JoinFilterPaginate",
+            "value": 31860.60216815655,
+            "unit": "ns",
+            "range": "± 84.90278287438447",
+            "allocated": 2568
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexMultiJoinAggregateBenchmarks.Quarry_MultiJoinAggregate",
+            "value": 53283.41885610727,
+            "unit": "ns",
+            "range": "± 102.58194702641548",
+            "allocated": 1096
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ConditionalBranchBenchmarks.Quarry_ConditionalQuery",
+            "value": 85349.74772135417,
+            "unit": "ns",
+            "range": "± 305.26172766820196",
+            "allocated": 8312
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteMultiBenchmarks.Quarry_MultiCte",
+            "value": 108589.0661969866,
+            "unit": "ns",
+            "range": "± 997.3016895026735",
+            "allocated": 8752
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteProjectionBenchmarks.Quarry_CteProjection",
+            "value": 106158.00479561942,
+            "unit": "ns",
+            "range": "± 1106.671046551058",
+            "allocated": 8624
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteSimpleBenchmarks.Quarry_SimpleCte",
+            "value": 107415.87715970553,
+            "unit": "ns",
+            "range": "± 992.3159390782887",
+            "allocated": 8632
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow_Inlined",
+            "value": 44021.75,
+            "unit": "ns",
+            "range": "± 652.5991565202249",
+            "allocated": 552
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow",
+            "value": 47917.53846153846,
+            "unit": "ns",
+            "range": "± 527.148874510262",
+            "allocated": 856
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereActiveBenchmarks.Quarry_WhereActive",
+            "value": 184499.52533830915,
+            "unit": "ns",
+            "range": "± 1417.7764891195159",
+            "allocated": 27096
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById",
+            "value": 16211.32633972168,
+            "unit": "ns",
+            "range": "± 217.46632783164267",
+            "allocated": 1336
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById_Parameterized",
+            "value": 17473.600799560547,
+            "unit": "ns",
+            "range": "± 139.44677181609154",
+            "allocated": 1664
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereCompoundBenchmarks.Quarry_WhereCompound",
+            "value": 85266.4303541917,
+            "unit": "ns",
+            "range": "± 507.7628544258048",
+            "allocated": 9008
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertBatchBenchmarks.Quarry_BatchInsert10",
+            "value": 122217.34210526316,
+            "unit": "ns",
+            "range": "± 1081.7454138339933",
+            "allocated": 15648
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertSingleBenchmarks.Quarry_SingleInsert",
+            "value": 53636.583333333336,
+            "unit": "ns",
+            "range": "± 437.22211088007",
+            "allocated": 1592
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinInnerBenchmarks.Quarry_InnerJoin",
+            "value": 137342.51136997767,
+            "unit": "ns",
+            "range": "± 949.3201196557835",
+            "allocated": 14464
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinThreeTableBenchmarks.Quarry_ThreeTableJoin",
+            "value": 382902.46944173175,
+            "unit": "ns",
+            "range": "± 895.0434077638411",
+            "allocated": 47424
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationFirstPageBenchmarks.Quarry_FirstPage",
+            "value": 34367.78786057692,
+            "unit": "ns",
+            "range": "± 157.63975903992494",
+            "allocated": 3976
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationLimitOffsetBenchmarks.Quarry_LimitOffset",
+            "value": 35563.530836838945,
+            "unit": "ns",
+            "range": "± 171.90483306387333",
+            "allocated": 3984
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectAllBenchmarks.Quarry_SelectAll",
+            "value": 196570.4048549107,
+            "unit": "ns",
+            "range": "± 1925.186534213896",
+            "allocated": 29152
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectProjectionBenchmarks.Quarry_SelectProjection",
+            "value": 88551.2799166166,
+            "unit": "ns",
+            "range": "± 489.7100168473514",
+            "allocated": 10400
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetExceptBenchmarks.Quarry_Except",
+            "value": 92043.87454927884,
+            "unit": "ns",
+            "range": "± 586.1785980003593",
+            "allocated": 9112
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetIntersectBenchmarks.Quarry_Intersect",
+            "value": 122542.31822791466,
+            "unit": "ns",
+            "range": "± 836.2336156096144",
+            "allocated": 9048
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetUnionAllBenchmarks.Quarry_UnionAll",
+            "value": 75072.30331420898,
+            "unit": "ns",
+            "range": "± 161.0101771009981",
+            "allocated": 9832
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringContainsBenchmarks.Quarry_Contains",
+            "value": 33795.960341233476,
+            "unit": "ns",
+            "range": "± 230.73677382662316",
+            "allocated": 2088
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringStartsWithBenchmarks.Quarry_StartsWith",
+            "value": 101192.54539271763,
+            "unit": "ns",
+            "range": "± 765.1291026400855",
+            "allocated": 10360
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryCountBenchmarks.Quarry_CountSubquery",
+            "value": 486914.39404296875,
+            "unit": "ns",
+            "range": "± 3921.145199684296",
+            "allocated": 1120
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryExistsBenchmarks.Quarry_Exists",
+            "value": 324943.4395926339,
+            "unit": "ns",
+            "range": "± 1934.772710121162",
+            "allocated": 10472
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryFilteredExistsBenchmarks.Quarry_FilteredExists",
+            "value": 410475.5643028846,
+            "unit": "ns",
+            "range": "± 2072.923736773928",
+            "allocated": 8632
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubquerySumBenchmarks.Quarry_SumSubquery",
+            "value": 490044.21551983175,
+            "unit": "ns",
+            "range": "± 2068.806444875468",
+            "allocated": 1128
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ThroughputBenchmarks.Quarry_Throughput",
+            "value": 19164653.78348214,
+            "unit": "ns",
+            "range": "± 133510.31433330057",
+            "allocated": 1923210
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow_Inlined",
+            "value": 39199.38461538462,
+            "unit": "ns",
+            "range": "± 379.7651771076302",
+            "allocated": 576
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow",
+            "value": 43601.5,
+            "unit": "ns",
+            "range": "± 627.3494024284017",
+            "allocated": 880
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowLagBenchmarks.Quarry_Lag",
+            "value": 358088.0192173549,
+            "unit": "ns",
+            "range": "± 3112.867444952158",
+            "allocated": 16016
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRankBenchmarks.Quarry_Rank",
+            "value": 215467.22316196986,
+            "unit": "ns",
+            "range": "± 1873.847275540811",
+            "allocated": 6440
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRowNumberBenchmarks.Quarry_RowNumber",
+            "value": 194719.52407602163,
+            "unit": "ns",
+            "range": "± 914.2239128124006",
+            "allocated": 6448
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRunningSumBenchmarks.Quarry_RunningSum",
+            "value": 292780.73084435094,
+            "unit": "ns",
+            "range": "± 2129.916191018988",
             "allocated": 16048
           }
         ]

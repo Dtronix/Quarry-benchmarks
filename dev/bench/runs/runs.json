@@ -1,5 +1,11 @@
 [
   {
+    "sha": "4daf62d0a1b7993338ba4ea25a8601155dbda74f",
+    "message": "Fix MigrationRunner bind-parameter mismatch on Npgsql 10 (GH-258) (#261)",
+    "date": "2026-04-23T15:43:31-04:00",
+    "file": "2026-04-23-4daf62d0.html"
+  },
+  {
     "sha": "9315347759af35118d6efc716787a7ffe22be0fb",
     "message": "Add docs-validation sample; correct Many<T> aggregate doc examples",
     "date": "2026-04-21T20:14:10-04:00",

@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1776979520255,
+  "lastUpdate": 1776982501977,
   "repoUrl": "https://github.com/Dtronix/Quarry",
   "entries": {
     "Quarry Benchmarks": [
@@ -3321,6 +3321,308 @@ window.BENCHMARK_DATA = {
             "value": 292780.73084435094,
             "unit": "ns",
             "range": "± 2129.916191018988",
+            "allocated": 16048
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "DJGosnell",
+            "email": "DJGosnell@users.noreply.github.com",
+            "username": "DJGosnell"
+          },
+          "committer": {
+            "name": "GitHub",
+            "email": "noreply@github.com",
+            "username": "web-flow"
+          },
+          "id": "c6e421fcacd2b944d647a78639742aab6ae74f9a",
+          "message": "Docs/DX: three friction points introducing Quarry (#259) (#260)\n\n* feat(generator): QRY043 diagnostic for un-materializable RawSqlAsync row types\n\nSurface the real reason RawSqlAsync<T> row types fail to compile when T is a\npositional record or has init-only properties. Previously authors saw cryptic\nCS7036/CS8852 errors against generated code; now they see QRY043 naming their\ntype and the specific shape violation.\n\nDetection runs in DisplayClassEnricher where the ITypeSymbol is already resolved\nvia the supplemental compilation. Emission is suppressed for affected sites so\nQRY043 is the only error reported.\n\n* feat(generator): support nested row-entity types in RawSqlAsync interceptors\n\nNested row types (row record declared inside an enclosing class) previously broke\nthe generator: it emitted `using <EnclosingType>;` which the compiler rejects\nwith CS0138. Fix tracks the nesting state on RawSqlTypeInfo and emits the\n`global::`-prefixed fully qualified type name in generated bodies for nested\ntypes so references resolve without a using directive. Namespace-level row\ntypes still use their short name + using (unchanged codegen).\n\n* feat(packaging): ship Quarry.targets auto-registering Quarry.Generated\n\nAdds build/Quarry.targets to the Quarry NuGet package. It appends\nQuarry.Generated to <InterceptorsNamespaces> so consumers no longer hit CS9137\nfor the Quarry-internal namespace they can't reasonably discover. Consumers\nstill add their own QuarryContext namespace — Phase 4's QRY044 analyzer\nsurfaces that gap at authoring time.\n\nAlso exposes InterceptorsNamespaces as a CompilerVisibleProperty so that\nanalyzer can read it from AnalyzerConfigOptions.\n\n* feat(analyzers): QRY044 warns when QuarryContext namespace is missing from InterceptorsNamespaces\n\nSurfaces the CS9137 project-setup gap at authoring time with the exact\n<InterceptorsNamespaces> line to paste into the .csproj. Warning severity:\nthe build would fail with CS9137 anyway, so this is an earlier signal, not a\nnew error. Context classes in the global namespace are ignored because\nQuarry.Generated (auto-registered by the shipped targets file) already\ncovers that path.\n\nDescriptive diagnostic only — no CodeFixProvider, since the fix target is\nthe .csproj rather than a source document and standard Roslyn code fixes\ncan't reliably modify project files.\n\n* docs: document row-entity shape requirements and interceptor opt-in behavior\n\nUpdates llm.md and Quarry.Generator/{README.md,llm.md} with:\n- Revised InterceptorsNamespaces guidance: Quarry.Generated is now\n  auto-registered by the shipped targets file, so the doc only prompts for\n  the consumer's context namespace.\n- New Row entity shape note under Raw SQL describing the parameterless ctor\n  + public get/set property requirements, with QRY043 and the chain-query\n  workaround for immutable shapes.\n- Nested row types are explicitly called out as supported.\n- QRY043 and QRY044 added to the diagnostic inventory tables.\n\n* fix(generator): remediate review findings for #259\n\nReview items addressed inline:\n- #3 (B, Correctness): `CheckRowEntityMaterializability` now also rejects\n  abstract classes and interfaces. CS0144 would otherwise fire against the\n  generated `new T()` with no indication of which row type was at fault.\n- #5 (B, Tests): adds a nested-row test driving the struct-reader fallback\n  by using an expression SELECT list, exercising `SanitizeForIdentifier`\n  and the FQN-in-`IRowReader<T>` path.\n- #6 (B, Tests): strengthens the namespace-level-row regression to assert\n  that `using TestApp.Rows;` IS emitted.\n- #7 (B, Tests): adds a QRY044 test where `build_property.InterceptorsNamespaces`\n  is entirely absent (null), confirming the diagnostic still fires.\n- Plus QRY043 tests for abstract and interface row types.\n\nTest totals: 3256 passing (+4 from Phase 5 green baseline).\n\n* chore: record PR #260 in workflow.md + add pr-body.md session artifact\n\n* docs: include abstract class and interface rejection in QRY043 docs\n\nThe REMEDIATE-phase extension of CheckRowEntityMaterializability added two\nadditional rejection cases (abstract classes and interfaces) that weren't\nreflected in llm.md, src/Quarry.Generator/README.md, or\nsrc/Quarry.Generator/llm.md. Brings the guide text and diagnostic inventory\ntables in line with the actual QRY043 behavior.\n\n* chore(session): record session 2 resume and populate review Action Taken\n\nResume bookkeeping only — no code changes. Closes the review classification\nloop by filling Action Taken for B items #3/#5/#6/#7 with references to\ncommit be224dd; adds session log entry covering the resume.\n\n* chore(session): back-step REMEDIATE -> REVIEW for re-analysis\n\n* fix: remediate second-round review findings (A/#4, B/#1/#7/#8/#9)\n\nAddresses review.md classifications from session 2:\n- A/#4 Correctness: extend HasQuarryContextAttributeSyntactic with an\n  AliasQualifiedNameSyntax branch so [global::QuarryContextAttribute]\n  and extern-alias attribute forms pass the syntactic pre-filter.\n- B/#1 Plan: drop RawSqlTypeInfo.FullyQualifiedResultTypeName — written\n  but never read; ResultTypeName already carries the final display form\n  (FQN for nested, short for not).\n- B/#7 Tests: add alias-qualified attribute QRY044 coverage.\n- B/#8 Tests: add struct-with-init-only-property QRY043 coverage.\n- B/#9 Tests: add mixed RawSqlScalarAsync<int> + failing RawSqlAsync<T>\n  test exercising the scalar branch in PipelineOrchestrator + FileEmitter.\n\n3259 tests pass (+3 new).\n\n* docs(pr): update PR body for second remediation round (A/#4, B/#1/#7/#8/#9)\n\n* chore(session): log rebase on origin/master (4daf62d)\n\n* chore(session): log second rebase on origin/master (e4354a4)\n\n* chore(session): log third rebase on origin/master (95c4bbb + d2a6b1e)\n\n* chore: remove session artifacts before merge",
+          "timestamp": "2026-04-23T21:22:30Z",
+          "url": "https://github.com/Dtronix/Quarry/commit/c6e421fcacd2b944d647a78639742aab6ae74f9a"
+        },
+        "date": 1776982501956,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateAvgBenchmarks.Quarry_Avg",
+            "value": 18398.5425327846,
+            "unit": "ns",
+            "range": "± 217.71693045002917",
+            "allocated": 960
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateCountBenchmarks.Quarry_Count",
+            "value": 8096.942783355713,
+            "unit": "ns",
+            "range": "± 39.09880509583638",
+            "allocated": 936
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateSumBenchmarks.Quarry_Sum",
+            "value": 18460.666573660714,
+            "unit": "ns",
+            "range": "± 175.70205828395444",
+            "allocated": 960
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ColdStartBenchmarks.Quarry_ColdStart",
+            "value": 187370.03871372767,
+            "unit": "ns",
+            "range": "± 2014.841978153074",
+            "allocated": 27152
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexJoinFilterPaginateBenchmarks.Quarry_JoinFilterPaginate",
+            "value": 32185.274169921875,
+            "unit": "ns",
+            "range": "± 225.860788538936",
+            "allocated": 2568
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexMultiJoinAggregateBenchmarks.Quarry_MultiJoinAggregate",
+            "value": 53625.3693586077,
+            "unit": "ns",
+            "range": "± 518.8817696318209",
+            "allocated": 1096
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ConditionalBranchBenchmarks.Quarry_ConditionalQuery",
+            "value": 88135.06757061298,
+            "unit": "ns",
+            "range": "± 869.1051182386129",
+            "allocated": 8312
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteMultiBenchmarks.Quarry_MultiCte",
+            "value": 107128.33118614784,
+            "unit": "ns",
+            "range": "± 459.0531280204226",
+            "allocated": 8752
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteProjectionBenchmarks.Quarry_CteProjection",
+            "value": 103809.42409842355,
+            "unit": "ns",
+            "range": "± 976.9903212787495",
+            "allocated": 8624
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteSimpleBenchmarks.Quarry_SimpleCte",
+            "value": 110855.94115271934,
+            "unit": "ns",
+            "range": "± 738.4716318589993",
+            "allocated": 8632
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow_Inlined",
+            "value": 44320.53846153846,
+            "unit": "ns",
+            "range": "± 461.1750599256598",
+            "allocated": 552
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow",
+            "value": 48721,
+            "unit": "ns",
+            "range": "± 452.2477197289114",
+            "allocated": 856
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereActiveBenchmarks.Quarry_WhereActive",
+            "value": 186061.2093157087,
+            "unit": "ns",
+            "range": "± 1047.0271112636758",
+            "allocated": 27096
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById",
+            "value": 16013.61115675706,
+            "unit": "ns",
+            "range": "± 96.77302352965634",
+            "allocated": 1336
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById_Parameterized",
+            "value": 17728.395254952567,
+            "unit": "ns",
+            "range": "± 160.1731500453938",
+            "allocated": 1664
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereCompoundBenchmarks.Quarry_WhereCompound",
+            "value": 82089.14956229074,
+            "unit": "ns",
+            "range": "± 690.9000471420852",
+            "allocated": 9008
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertBatchBenchmarks.Quarry_BatchInsert10",
+            "value": 120507.0625,
+            "unit": "ns",
+            "range": "± 867.6248013014227",
+            "allocated": 15648
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertSingleBenchmarks.Quarry_SingleInsert",
+            "value": 53262.07692307692,
+            "unit": "ns",
+            "range": "± 624.7429420087462",
+            "allocated": 1592
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinInnerBenchmarks.Quarry_InnerJoin",
+            "value": 141685.28973858172,
+            "unit": "ns",
+            "range": "± 1033.3531187161132",
+            "allocated": 14464
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinThreeTableBenchmarks.Quarry_ThreeTableJoin",
+            "value": 383000.6164738582,
+            "unit": "ns",
+            "range": "± 1803.9459429585809",
+            "allocated": 47424
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationFirstPageBenchmarks.Quarry_FirstPage",
+            "value": 34669.22400774275,
+            "unit": "ns",
+            "range": "± 322.81101451635993",
+            "allocated": 3976
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationLimitOffsetBenchmarks.Quarry_LimitOffset",
+            "value": 35260.68688964844,
+            "unit": "ns",
+            "range": "± 190.1879455683687",
+            "allocated": 3984
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectAllBenchmarks.Quarry_SelectAll",
+            "value": 199356.73630934494,
+            "unit": "ns",
+            "range": "± 748.47952483853",
+            "allocated": 29152
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectProjectionBenchmarks.Quarry_SelectProjection",
+            "value": 89475.65473429362,
+            "unit": "ns",
+            "range": "± 346.72946876703406",
+            "allocated": 10400
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetExceptBenchmarks.Quarry_Except",
+            "value": 89843.57037823017,
+            "unit": "ns",
+            "range": "± 677.7749605593856",
+            "allocated": 9112
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetIntersectBenchmarks.Quarry_Intersect",
+            "value": 122448.9448765346,
+            "unit": "ns",
+            "range": "± 836.7956038412799",
+            "allocated": 9048
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetUnionAllBenchmarks.Quarry_UnionAll",
+            "value": 75932.5917881557,
+            "unit": "ns",
+            "range": "± 628.9505813039043",
+            "allocated": 9832
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringContainsBenchmarks.Quarry_Contains",
+            "value": 33514.05467341496,
+            "unit": "ns",
+            "range": "± 182.23706810169722",
+            "allocated": 2088
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringStartsWithBenchmarks.Quarry_StartsWith",
+            "value": 100580.03020770733,
+            "unit": "ns",
+            "range": "± 476.2905728630928",
+            "allocated": 10360
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryCountBenchmarks.Quarry_CountSubquery",
+            "value": 485532.42938701925,
+            "unit": "ns",
+            "range": "± 4318.397551323325",
+            "allocated": 1120
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryExistsBenchmarks.Quarry_Exists",
+            "value": 327207.6086077009,
+            "unit": "ns",
+            "range": "± 2591.520214658375",
+            "allocated": 10472
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryFilteredExistsBenchmarks.Quarry_FilteredExists",
+            "value": 420276.29026442306,
+            "unit": "ns",
+            "range": "± 1455.235337986657",
+            "allocated": 8632
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubquerySumBenchmarks.Quarry_SumSubquery",
+            "value": 490044.6669921875,
+            "unit": "ns",
+            "range": "± 2239.752142797757",
+            "allocated": 1128
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ThroughputBenchmarks.Quarry_Throughput",
+            "value": 19090004.58653846,
+            "unit": "ns",
+            "range": "± 131068.62265431933",
+            "allocated": 1923210
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow_Inlined",
+            "value": 39778.916666666664,
+            "unit": "ns",
+            "range": "± 618.7612931323257",
+            "allocated": 576
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow",
+            "value": 43491.46153846154,
+            "unit": "ns",
+            "range": "± 407.4769145576666",
+            "allocated": 880
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowLagBenchmarks.Quarry_Lag",
+            "value": 356059.09157151444,
+            "unit": "ns",
+            "range": "± 1039.816402203269",
+            "allocated": 16016
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRankBenchmarks.Quarry_Rank",
+            "value": 212727.24532376803,
+            "unit": "ns",
+            "range": "± 702.1437316842727",
+            "allocated": 6440
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRowNumberBenchmarks.Quarry_RowNumber",
+            "value": 195026.09174053484,
+            "unit": "ns",
+            "range": "± 881.06804170347",
+            "allocated": 6448
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRunningSumBenchmarks.Quarry_RunningSum",
+            "value": 296633.8309795673,
+            "unit": "ns",
+            "range": "± 1796.0885989702572",
             "allocated": 16048
           }
         ]

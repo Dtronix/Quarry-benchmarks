@@ -1,5 +1,11 @@
 [
   {
+    "sha": "352502f705af75b638015553d693c0623581c655",
+    "message": "Fix QRY044 false-positive when InterceptorsNamespaces has multiple entries (#265)",
+    "date": "2026-04-24T11:56:12-04:00",
+    "file": "2026-04-24-352502f7.html"
+  },
+  {
     "sha": "c6e421fcacd2b944d647a78639742aab6ae74f9a",
     "message": "Docs/DX: three friction points introducing Quarry (#259) (#260)",
     "date": "2026-04-23T17:22:30-04:00",

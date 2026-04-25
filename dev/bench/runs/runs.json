@@ -1,5 +1,11 @@
 [
   {
+    "sha": "991e1bc6c9bfc29408833d04cec27fdedcc962f3",
+    "message": "Mirror PG execution coverage to MySQL: Testcontainers.MySql + real MySqlConnection on My + cross-dialect mirror (#271)",
+    "date": "2026-04-25T12:59:22-04:00",
+    "file": "2026-04-25-991e1bc6.html"
+  },
+  {
     "sha": "920e8625e71031b336d527700f7956af4a89cb64",
     "message": "Fix Npgsql 10 parameter-binding mismatch on PostgreSQL (redux of #258) (#266)",
     "date": "2026-04-25T10:57:02-04:00",

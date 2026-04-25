@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777139547568,
+  "lastUpdate": 1777157589041,
   "repoUrl": "https://github.com/Dtronix/Quarry",
   "entries": {
     "Quarry Benchmarks": [
@@ -4529,6 +4529,308 @@ window.BENCHMARK_DATA = {
             "value": 294397.9610072545,
             "unit": "ns",
             "range": "± 2346.385010674897",
+            "allocated": 16048
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "DJGosnell",
+            "email": "DJGosnell@users.noreply.github.com",
+            "username": "DJGosnell"
+          },
+          "committer": {
+            "name": "GitHub",
+            "email": "noreply@github.com",
+            "username": "web-flow"
+          },
+          "id": "a55b5786174a49e18ae4dbb9ba7f3b78972a24f1",
+          "message": "Mirror PG execution coverage to SQL Server: Testcontainers.MsSql + real SqlConnection on Ss + cross-dialect mirror (#270) (#276)\n\n* Add Testcontainers.MsSql + MsSqlTestContainer skeleton + Docker probe (#270)\n\nPhase 1 of mirroring PR #266's PG execution coverage to SQL Server.\nAdds Testcontainers.MsSql 4.* to Quarry.Tests, a lazy process-wide\nMsSqlContainer helper that mirrors PostgresTestContainer's shape, and a\nsingle regression-probe test confirming the MS SQL 2022 container boots\nand accepts a connection.\n\nEnsureBaselineAsync / CreateOwnedSchemaAsync are stubbed with\nNotImplementedException — Phase 2 will implement the schema DDL,\nquarry_test_user mapped login, and seed data, then upgrade\nQueryTestHarness.Ss off MockDbConnection.\n\nTests:\n - MsSqlContainerSmokeTests.SqlServerContainer_BootsAndAcceptsConnection:\n   boots the container, runs SELECT @@VERSION, asserts the banner\n   contains \"SQL Server\".\n\nThe smoke test pays the ~30s cold-start cost only once per process; the\nshared container is reused across all later SQL Server integration\ntests by virtue of MsSqlTestContainer's static-field caching.\n\n* Port schema DDL to SQL Server + upgrade QueryTestHarness.Ss to real SqlConnection (#270)\n\nPhase 2 of the SQL Server execution-mirror work. QueryTestHarness.Ss now\nattaches to a real Microsoft.Data.SqlClient SqlConnection against the\nshared Testcontainers SQL Server 2022 container instead of MockDbConnection.\nLite, Pg, and Ss are all on real providers; My stays on the mock (covered\nby the parallel issue #269).\n\nIsolation strategy is transactional by default and mirrors PG's pattern:\n - MsSqlTestContainer.EnsureBaselineAsync() creates the shared\n   quarry_test schema, the quarry_test_user login + db user (default\n   schema = quarry_test, db_owner role), the test tables, and the seed\n   data — all gated by sp_getapplock so concurrent test processes can\n   share one container without racing on setup.\n - Each CreateAsync() opens a fresh pooled SqlConnection authenticated\n   as quarry_test_user. The default-schema mapping makes unqualified\n   [users] from SsDb resolve to [quarry_test].[users] without any\n   per-connection SET equivalent (SQL Server has no search_path).\n - DisposeAsync() ROLLBACKs and closes the connection back to the pool.\n - Near-zero per-test overhead.\n\nTests that need their own schema — migration runner tests, transaction-\nbehavior tests, anything that issues its own BEGIN/COMMIT — pass\nuseOwnSsSchema: true to CreateAsync(). That path provisions a per-harness\nschema test_<guid> and a dedicated short-lived login (default schema\npoints at the new schema), connects as that login with no transaction,\nand drops the schema/user/login on dispose. SQL Server has no\nDROP SCHEMA CASCADE; teardown drops tables explicitly first.\n\nSQL Server DDL port (per Quarry.Migration.SqlTypeMapper.MapSqlServer):\n - Primary keys use INT IDENTITY(1,1). Seed inserts toggle\n   SET IDENTITY_INSERT ... ON/OFF to supply explicit IDs. SQL Server\n   tracks the high-water mark internally, so no PG-style setval step.\n - Money / decimal columns use DECIMAL(18, 2).\n - bool columns use BIT (defaults are 1/0, not TRUE/FALSE).\n - DateTime → DATETIME2; DateTimeOffset → DATETIMEOFFSET.\n - Identifiers are square-bracket quoted to match the SqlServer\n   manifest emission.\n - Computed column: AS (...) PERSISTED instead of GENERATED ... STORED.\n - FK constraints stay omitted (same SQLite-parity reasoning as PG).\n\nNo generator changes are required for SQL Server: Microsoft.Data.SqlClient\nalready accepts @pN SQL with @pN parameter names — the configuration\nQuarry's existing emit produces. The Phase 4 mirror should pass on the\nexisting emit.\n\nNo new test sites in this phase; existing 2997 baseline still passes.\nPhase 3 will introduce the first Ss-execute integration tests.\n\n* Add Ss-execute integration tests + fix OUTPUT-clause placement on SqlServer (#270)\n\nPhase 3 of the SQL Server execution-mirror work.\n\nNew integration tests (5):\n - SqlServerIntegrationTests.EntityInsert_OnSqlServer: single-entity INSERT\n   with OUTPUT INSERTED. Reads back via Where + Select projection.\n - SqlServerIntegrationTests.InsertBatch_OnSqlServer: multi-row batch\n   insert via ExecuteNonQueryAsync.\n - SqlServerIntegrationTests.WhereInCollection_OnSqlServer: runtime-\n   expanded IN clause via the BuildWantedIds method-call shape that\n   defeats the generator's constant-inlining pass.\n - SqlServerMigrationRunnerTests.RunAsync_InsertsHistoryRow_OnSqlServer:\n   end-to-end MigrationRunner regression test, symmetric to the\n   PostgresMigrationRunnerTests guard.\n\nGenerator fix surfaced by EntityInsert: RenderInsertSql /\nRenderBatchInsertSql were emitting the OUTPUT INSERTED.[Id] clause AFTER\nthe VALUES clause for SqlServer, which is invalid SQL Server syntax\n(\"Incorrect syntax near 'OUTPUT'\"). The OUTPUT clause must precede VALUES.\nFixed both render paths; for batch insert the OUTPUT is folded into the\nprefix and the trailing returning suffix is suppressed for SqlServer.\nOther dialects (RETURNING for SQLite/PG, ; SELECT LAST_INSERT_ID() for\nMySQL) are unchanged.\n\nTest assertions updated (18 cross-dialect insert sites across 5 files):\nPrepareIntegrationTests, CrossDialectBatchInsertTests, CrossDialectEnum\nTests, CrossDialectInsertTests, CrossDialectTypeMappingTests. The\nquarry-manifest.sqlserver.md regenerates automatically.\n\nHarness wiring: the transactional-rollback path now uses raw `BEGIN\nTRANSACTION` / `ROLLBACK TRANSACTION` SQL commands instead of\nSqlConnection.BeginTransaction(), because SqlClient requires every\nSqlCommand to have its `Transaction` property assigned when an explicit\nSqlTransaction is open — and Quarry's QueryExecutor builds DbCommands\ngenerically. Server-side semantics are identical.\n\nMsSqlTestContainer also gained CreateEmptySchemaAsync and a dynamic\nDROP loop in DropOwnedSchemaAsync so migration-runner tests can drop\ntheir __quarry_migrations + demo tables on teardown without listing\nthem explicitly.\n\nTests: 2997 baseline + 4 new Ss-execute integration tests = 3001.\nAll green.\n\n* Mirror Pg-execute coverage to Ss across 22 cross-dialect files (#270)\n\nPhase 4 of the SQL Server execution-mirror work. Adds parallel\n`await ss.Execute*Async(...)` blocks to every `await pg.Execute*Async(...)`\nsite across 22 CrossDialect*Tests files: 259 new ss execute sites,\nmechanically mirroring the assertion shape of the PG counterpart.\n\nHelper rename: PgRowOrderExtensions → RowOrderExtensions. The\nSortedByAsync helper is now used by both Pg-execute and Ss-execute\nmirror sites — SQL Server has the same no-row-order-without-ORDER-BY\nrule as PostgreSQL. Documentation generalised to mention both\nproviders.\n\nSpecial handling:\n - CrossDialectMiscTests, CrossDialectSelectTests, CrossDialectSubquery\n   Tests: tests that destructured `(Lite, Pg, _, _)` were updated to\n   `(Lite, Pg, _, Ss)` so the Ss variable is in scope for the new\n   mirror block.\n - CrossDialectTypeMappingTests.RoundTrip_InsertThenSelect_Preserves\n   MoneyValue: a parallel Ss.Accounts().Insert(...) setup was added so\n   the Ss SELECT mirror has data to read.\n - CrossDialectCompositionTests.Join_Distinct_OrderBy_Limit: skipped on\n   Ss with comment referencing #267 (same DISTINCT + ORDER BY rule that\n   PG hits).\n - CrossDialectCteTests.Cte_TwoChainedWiths_DistinctDtos_CapturedParams:\n   uses the same `cutoff` variable rename PR #266 applied for PG; the\n   underlying chained-With dispatch bug (#268) is dialect-independent.\n\nPhase 4 surfaced 19 Ss-only failures awaiting Phase 5 triage (see\nworkflow.md ## Decisions for the categorisation):\n - 7 SqlDateTime-overflow failures from `default(DateTime)` parameter\n   binding.\n - 9 Int64-to-Int32 cast failures from SQL Server window functions\n   returning BIGINT.\n - 3 case-sensitivity-collation failures from SQL Server's default\n   case-insensitive collation.\n\nTests: 2982 passing, 19 failing on Ss execution path. Fixes land in\nPhase 5 commits, one per category.\n\n* Triage: case-sensitive collation on Ss schema (#270)\n\nPhase 5a triage: makes the SQL Server harness's NVARCHAR columns use\nCOLLATE SQL_Latin1_General_CP1_CS_AS (case-sensitive, accent-sensitive)\ninstead of inheriting the container's default\nSQL_Latin1_General_CP1_CI_AS (case-INsensitive). Aligns string-comparison\nsemantics with SQLite, PostgreSQL, and MySQL — all of which compare\ncase-sensitively by default.\n\nResolves three Ss-only failures from Phase 4:\n - CrossDialectCompositionTests.Where_ContainsRuntimeCollection\n - CrossDialectCompositionTests.Where_Any_And_All_MultipleSubqueries\n - CrossDialectCompositionTests.Join_Where_InClause\n\nEach asserted Count == 0 for lowercase-vs-PascalCase non-matches; SQL\nServer's default collation made those queries match the seed data\n(returning 3, 2, 3 rows respectively).\n\nThe COLLATE override is applied at column declaration only — generated\nSQL is unchanged. Other tests that compare exact-case strings continue\nto work without modification.\n\nTests: 19 failing → 16 failing (3 datetime/Int64 categories remaining).\n\n* Triage: replace default(DateTime) with valid literal in 7 insert tests (#270)\n\nPhase 5b triage. Microsoft.Data.SqlClient binds .NET DateTime parameters\nas SqlDbType.DateTime by default — that type's range is 1753-01-01 to\n9999-12-31, but `default(DateTime)` is 0001-01-01, which produces a\nSqlDateTime overflow at parameter-binding time even though the\nDATETIME2 column would accept the value.\n\nReplaces `CreatedAt = default` / `OrderDate = default` with\n`new DateTime(2024, 1, 1)` in CrossDialectInsertTests and\nCrossDialectEnumTests (the seven tests that surfaced the failure on\nSs execution). The replacement value works for all four dialects;\nthe test's intent (Insert succeeds and returns an identity > 0) is\npreserved on Lite and Pg.\n\nResolves seven Ss-only failures from Phase 4:\n - Insert_SingleUser\n - Insert_SingleOrder\n - ExecuteScalarAsync_SingleUser_ReturnsIdentity\n - ExecuteScalarAsync_SingleOrder_ReturnsIdentity\n - ExecuteNonQueryAsync_SingleUser\n - ExecuteNonQueryAsync_SingleOrder\n - Insert_WithEnumColumn\n\nThe underlying generator behaviour (binding DateTime as DATETIME on\nSs) is preserved — the appropriate generator-side fix (forcing\nSqlDbType.DateTime2 on emitted parameters when the dialect is\nSqlServer) is out of scope for this PR. The new test values stay\nwithin the DATETIME range so this PR's tests remain robust against\nthat fix landing later.\n\nTests: 16 failing → 9 failing (only the Int64-vs-Int32 window-function\ncategory remains).\n\n* Triage: skip Ss execute on 9 window-function sites pending #274 (#270)\n\nPhase 5c triage. SQL Server returns ROW_NUMBER, DENSE_RANK, NTILE,\nCOUNT-over-partition, etc. as BIGINT. Microsoft.Data.SqlClient.SqlData\nReader.GetInt32 does not auto-narrow from BIGINT, so the generator-\nemitted reader fails with InvalidCastException when projecting a\nwindow-function result into an int-typed tuple element. Npgsql narrows\nsilently, which is why PG passes the same projection.\n\nThe fix belongs in the generator (cast-in-SQL on Ss, or read-with-\nGetInt64 on Ss). Filed as a separate issue (#274) to keep this PR\nscope-bounded.\n\nFor the nine affected tests, the Ss-execute block is replaced with a\ncomment referencing #274. The SQL-string emit assertion (in\nQueryTestHarness.AssertDialects above each block) still covers the\ngenerator's Ss output, so the emit-side regression guard is preserved\neven while the runtime side is unverified.\n\nAffected sites:\n - CrossDialectWindowFunctionTests:\n   - WindowFunction_RowNumber_OrderBy\n   - WindowFunction_DenseRank_OrderByDescending\n   - WindowFunction_Joined_RowNumber\n   - WindowFunction_WithWhereClause\n   - WindowFunction_MixedTypePartitionBy\n   - WindowFunction_Ntile_ConstVariable\n   - WindowFunction_Ntile_Variable\n - CrossDialectSetOperationTests:\n   - UnionAll_WithVariableWindowFunctionArg\n   - UnionAll_WithVariableWindowFunctionArg_ParamOffset\n\nTests: 9 failing → 0 failing. Suite is fully green: 3001 / 3001.\n\n* REMEDIATE: address review findings (#270)\n\nAddresses six A-classified review findings (one was documentation-only,\nfolded into the PR body):\n\n1. Mirror two missed pg-execute sites in CrossDialectSchemaTests.cs\n   (Select_SingleColumn, Delete_All_NoWhereClause). The first site also\n   gains the missing `.SortedByAsync(s => s)` to align with the PR #266\n   row-order-flake guard pattern; lt/pg/ss results all sort by the\n   single-column UserName ('Alice' first), preserving the assertion.\n\n2. Tighten MsSqlTestContainer.IsDockerUnavailable: removed the\n   null-forgiving `!` and the redundant `break` from the inner-exception\n   walk; loop now reads as the idiomatic\n   `for (var cur = ex; cur is not null; cur = cur.InnerException)` shape.\n\n3. DropOwnedSchemaAsync now uses SqlConnection.ClearPool(probe) keyed by\n   the per-harness user's connection string instead of\n   SqlConnection.ClearAllPools() (which would evict every other live\n   harness's pool entries). The probe is a non-opened SqlConnection — no\n   authentication round-trip, just connection-string-based pool keying.\n\n4. Tighten the baseline readiness probe:\n    * Renamed SchemaHasUsersTableAsync → SchemaHasSeededTableAsync and\n      pointed it at the LAST seeded table (`shipments`) with a row-count\n      check. A partial-baseline (early tables created but seed never\n      finished) now correctly fails the check.\n    * Made `CREATE SCHEMA` idempotent via\n      `IF NOT EXISTS (sys.schemas) EXEC('CREATE SCHEMA …')`. Recovery\n      from a previously crashed process no longer fails with\n      \"schema already exists\".\n    * Added DropAllObjectsInSchemaAsync call before re-creating tables\n      on the recovery path, so any leftover partial-state objects are\n      purged.\n\n5. Move Ss.Dispose() to AFTER the rollback in QueryTestHarness.DisposeAsync,\n   mirroring the PG path's wrapper-after-rollback ordering. No functional\n   change today (SsDb.Dispose only disposes the wrapper) but removes the\n   footgun for any future change to SsDb.Dispose semantics.\n\nThe OUTPUT-clause emit shape change finding (#27) is documentation-only;\nthe PR body's Breaking Changes section calls it out explicitly. The\nplan-vs-reality finding (#1, #2) is partially addressed by mirroring\nthe SchemaTests sites and noted in the PR body's site-count summary.\n\nTests: 3001 / 3001 still green.\n\n* Add PR body and link in workflow.md (#270)\n\n* chore: remove session artifacts before merge",
+          "timestamp": "2026-04-25T22:00:56Z",
+          "url": "https://github.com/Dtronix/Quarry/commit/a55b5786174a49e18ae4dbb9ba7f3b78972a24f1"
+        },
+        "date": 1777157589016,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateAvgBenchmarks.Quarry_Avg",
+            "value": 18661.85855102539,
+            "unit": "ns",
+            "range": "± 162.06858428627743",
+            "allocated": 960
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateCountBenchmarks.Quarry_Count",
+            "value": 8292.115701528695,
+            "unit": "ns",
+            "range": "± 57.92113294998399",
+            "allocated": 936
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateSumBenchmarks.Quarry_Sum",
+            "value": 18912.683811732702,
+            "unit": "ns",
+            "range": "± 234.4944575948567",
+            "allocated": 960
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ColdStartBenchmarks.Quarry_ColdStart",
+            "value": 183310.38352748327,
+            "unit": "ns",
+            "range": "± 1434.2587719689393",
+            "allocated": 27152
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexJoinFilterPaginateBenchmarks.Quarry_JoinFilterPaginate",
+            "value": 32445.564819335938,
+            "unit": "ns",
+            "range": "± 329.28135923356143",
+            "allocated": 2568
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexMultiJoinAggregateBenchmarks.Quarry_MultiJoinAggregate",
+            "value": 53479.178427559986,
+            "unit": "ns",
+            "range": "± 452.6409942532725",
+            "allocated": 1096
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ConditionalBranchBenchmarks.Quarry_ConditionalQuery",
+            "value": 86548.64285982572,
+            "unit": "ns",
+            "range": "± 475.0062050473982",
+            "allocated": 8312
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteMultiBenchmarks.Quarry_MultiCte",
+            "value": 111354.28683035714,
+            "unit": "ns",
+            "range": "± 655.0436474508094",
+            "allocated": 8752
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteProjectionBenchmarks.Quarry_CteProjection",
+            "value": 104153.01131766183,
+            "unit": "ns",
+            "range": "± 818.578155684488",
+            "allocated": 8624
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteSimpleBenchmarks.Quarry_SimpleCte",
+            "value": 107838.63776104267,
+            "unit": "ns",
+            "range": "± 693.6908825490619",
+            "allocated": 8632
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow_Inlined",
+            "value": 45287.85294117647,
+            "unit": "ns",
+            "range": "± 633.6757788073163",
+            "allocated": 552
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow",
+            "value": 50136.60784313725,
+            "unit": "ns",
+            "range": "± 755.9752926764571",
+            "allocated": 856
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereActiveBenchmarks.Quarry_WhereActive",
+            "value": 186038.48894391741,
+            "unit": "ns",
+            "range": "± 1608.9655449958411",
+            "allocated": 27096
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById",
+            "value": 16516.272761753626,
+            "unit": "ns",
+            "range": "± 157.95166357290714",
+            "allocated": 1336
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById_Parameterized",
+            "value": 17862.415041605633,
+            "unit": "ns",
+            "range": "± 71.92623438323338",
+            "allocated": 1664
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereCompoundBenchmarks.Quarry_WhereCompound",
+            "value": 79805.85083946816,
+            "unit": "ns",
+            "range": "± 691.1305420021497",
+            "allocated": 9008
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertBatchBenchmarks.Quarry_BatchInsert10",
+            "value": 125172.65384615384,
+            "unit": "ns",
+            "range": "± 974.7714985364388",
+            "allocated": 15648
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertSingleBenchmarks.Quarry_SingleInsert",
+            "value": 55987.5,
+            "unit": "ns",
+            "range": "± 1023.0800555186286",
+            "allocated": 1592
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinInnerBenchmarks.Quarry_InnerJoin",
+            "value": 135185.365234375,
+            "unit": "ns",
+            "range": "± 547.0671710882009",
+            "allocated": 14464
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinThreeTableBenchmarks.Quarry_ThreeTableJoin",
+            "value": 389031.8894042969,
+            "unit": "ns",
+            "range": "± 2725.058013373537",
+            "allocated": 47424
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationFirstPageBenchmarks.Quarry_FirstPage",
+            "value": 34268.80178128756,
+            "unit": "ns",
+            "range": "± 235.56163973704705",
+            "allocated": 3976
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationLimitOffsetBenchmarks.Quarry_LimitOffset",
+            "value": 35700.882838657926,
+            "unit": "ns",
+            "range": "± 362.89804998403713",
+            "allocated": 3984
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectAllBenchmarks.Quarry_SelectAll",
+            "value": 194788.70892803484,
+            "unit": "ns",
+            "range": "± 1012.5549205451043",
+            "allocated": 29152
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectProjectionBenchmarks.Quarry_SelectProjection",
+            "value": 88134.85812813895,
+            "unit": "ns",
+            "range": "± 949.8689411803748",
+            "allocated": 10400
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetExceptBenchmarks.Quarry_Except",
+            "value": 91798.35304478237,
+            "unit": "ns",
+            "range": "± 750.9704032771247",
+            "allocated": 9112
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetIntersectBenchmarks.Quarry_Intersect",
+            "value": 120376.6606257512,
+            "unit": "ns",
+            "range": "± 1073.372722807605",
+            "allocated": 9048
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetUnionAllBenchmarks.Quarry_UnionAll",
+            "value": 77396.36442347935,
+            "unit": "ns",
+            "range": "± 846.3160218287568",
+            "allocated": 9832
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringContainsBenchmarks.Quarry_Contains",
+            "value": 34114.37110314002,
+            "unit": "ns",
+            "range": "± 261.22424759798105",
+            "allocated": 2088
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringStartsWithBenchmarks.Quarry_StartsWith",
+            "value": 100919.62167794364,
+            "unit": "ns",
+            "range": "± 891.1590523366991",
+            "allocated": 10360
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryCountBenchmarks.Quarry_CountSubquery",
+            "value": 488455.831124442,
+            "unit": "ns",
+            "range": "± 3440.9280898255065",
+            "allocated": 1120
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryExistsBenchmarks.Quarry_Exists",
+            "value": 325740.4386858259,
+            "unit": "ns",
+            "range": "± 2710.4371214652906",
+            "allocated": 10472
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryFilteredExistsBenchmarks.Quarry_FilteredExists",
+            "value": 413087.69861778844,
+            "unit": "ns",
+            "range": "± 2950.763444636314",
+            "allocated": 8632
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubquerySumBenchmarks.Quarry_SumSubquery",
+            "value": 489222.7236328125,
+            "unit": "ns",
+            "range": "± 3880.61101258574",
+            "allocated": 1128
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ThroughputBenchmarks.Quarry_Throughput",
+            "value": 18266704.066964287,
+            "unit": "ns",
+            "range": "± 103446.5719370089",
+            "allocated": 1923200
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow_Inlined",
+            "value": 39469.153846153844,
+            "unit": "ns",
+            "range": "± 356.00090031577315",
+            "allocated": 576
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow",
+            "value": 43445.4,
+            "unit": "ns",
+            "range": "± 748.1386235183959",
+            "allocated": 880
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowLagBenchmarks.Quarry_Lag",
+            "value": 354764.8959585336,
+            "unit": "ns",
+            "range": "± 1264.897324761889",
+            "allocated": 16016
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRankBenchmarks.Quarry_Rank",
+            "value": 211166.37295297475,
+            "unit": "ns",
+            "range": "± 596.1694989951895",
+            "allocated": 6440
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRowNumberBenchmarks.Quarry_RowNumber",
+            "value": 193216.21354166666,
+            "unit": "ns",
+            "range": "± 465.66773706597456",
+            "allocated": 6448
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRunningSumBenchmarks.Quarry_RunningSum",
+            "value": 296938.2109750601,
+            "unit": "ns",
+            "range": "± 1817.2846813703197",
             "allocated": 16048
           }
         ]

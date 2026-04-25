@@ -1,5 +1,11 @@
 [
   {
+    "sha": "920e8625e71031b336d527700f7956af4a89cb64",
+    "message": "Fix Npgsql 10 parameter-binding mismatch on PostgreSQL (redux of #258) (#266)",
+    "date": "2026-04-25T10:57:02-04:00",
+    "file": "2026-04-25-920e8625.html"
+  },
+  {
     "sha": "352502f705af75b638015553d693c0623581c655",
     "message": "Fix QRY044 false-positive when InterceptorsNamespaces has multiple entries (#265)",
     "date": "2026-04-24T11:56:12-04:00",

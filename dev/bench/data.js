@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777049279221,
+  "lastUpdate": 1777132144178,
   "repoUrl": "https://github.com/Dtronix/Quarry",
   "entries": {
     "Quarry Benchmarks": [
@@ -3925,6 +3925,308 @@ window.BENCHMARK_DATA = {
             "value": 300907.2870744978,
             "unit": "ns",
             "range": "± 2735.0129026225795",
+            "allocated": 16048
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "DJGosnell",
+            "email": "DJGosnell@users.noreply.github.com",
+            "username": "DJGosnell"
+          },
+          "committer": {
+            "name": "GitHub",
+            "email": "noreply@github.com",
+            "username": "web-flow"
+          },
+          "id": "920e8625e71031b336d527700f7956af4a89cb64",
+          "message": "Fix Npgsql 10 parameter-binding mismatch on PostgreSQL (redux of #258) (#266)\n\n* Add Testcontainers helper + Npgsql parameter-binding regression probe (#258)\n\nPhase 1 of the redux fix. Adds Testcontainers.PostgreSql 4.* to\nQuarry.Tests and a lazy, process-wide PostgreSqlContainer helper so every\nintegration test routes through a single container instance.\n\nMoves the DESIGN-phase empirical probe into NpgsqlParameterBindingTests\nas long-term regression documentation. Five tests (A–E) encode against a\nreal Npgsql 10 + PG 17 container which ParameterName/SQL configurations\nNpgsql accepts, proving that:\n - @pN SQL + @pN name works (rewrite path),\n - $N SQL + @pN name fails (the v0.3.0 state — original #258),\n - $N SQL + $N name fails (the v0.3.1/0.3.2 state — PR #261),\n - $N SQL + empty/unset name works (native positional binding, the\n   configuration Phases 2–3 will make Quarry emit on PostgreSQL).\n\n* Return empty ParameterName for PostgreSQL in SqlFormatting (#258)\n\nPhase 2 of the redux fix. SqlFormatting.GetParameterName now returns\nstring.Empty on PostgreSQL instead of \"$N+1\". This is what makes\nNpgsql 10 use native positional binding against the $N placeholders that\nFormatParameter already emits — the only configuration the Phase 1\nprobe proved works on Npgsql 10.\n\nAlso fixes MigrationRunner.AddParameter and Quarry.Tool's\nMigrateCommands.AddParameter, both of which route DbParameter.ParameterName\nthrough GetParameterName — this is what closes the original #258 bug\nobserved in v0.3.0 and re-surfaced in v0.3.1 / v0.3.2.\n\nTests:\n - DialectTests.GetParameterName_ReturnsNameForDbParameter: PostgreSQL\n   TestCases flip from \"$1\"/\"$6\" to \"\"/\"\".\n - DialectTests.GetParameterName_MatchesFormatParameter_ForNamedDialects:\n   PostgreSQL dropped — it is no longer a name-binding dialect from\n   Quarry's perspective; the new invariant is \"PG ParameterName is empty\".\n - DialectTests.GetParameterName_IsAlwaysEmpty_ForPostgreSQL: new\n   regression guard.\n\n* Emit empty ParameterName for PostgreSQL in generator (#258)\n\nPhase 3 of the redux fix. The three generator sites that assign\nDbParameter.ParameterName now route PostgreSQL through the empty-string\nliteral, matching what SqlFormatting.GetParameterName returns for PG at\nruntime:\n\n - CarrierEmitter.FormatParamName         → \"\"  (compile-time constant)\n - CarrierEmitter.EmitParamNameExpr       → \"\\\"\\\"\"  (C# literal \"\")\n - TerminalBodyEmitter batch-insert       → \"\\\"\\\"\"\n - TerminalEmitHelpers diag param-name    → \"\\\"\\\"\"\n\nThe SQL-text side is untouched: FormatParameter still emits $N on PG,\nTerminalEmitHelpers.EmitCollectionPartsPopulation still builds $N string\narrays for IN-clause expansion, and BatchInsertSqlBuilder still uses $N.\n\nThis makes every generated entity-insert, batch-insert, WHERE-clause,\nORDER-BY, LIMIT/OFFSET, and diag parameter path on PG ship DbParameter\ninstances with empty ParameterName — the configuration the Phase 1 probe\nproved works on Npgsql 10.\n\nCarrierGenerationTests regression guards flipped:\n - EntityInsert on PG: asserts `__pN.ParameterName = \"\"` (both empty and\n   does-not-match $N or @pN patterns for defense in depth).\n - BatchInsert on PG: asserts `__p.ParameterName = \"\"` (not .Dollar,\n   not .AtP).\n\nParameterNames.Dollar remains in Quarry.Internal — still used to build\n$N SQL text for IN-clause placeholder arrays.\n\n* Upgrade QueryTestHarness.Pg to real Npgsql connection (#258)\n\nPhase 4 of the redux fix. QueryTestHarness.Pg now attaches to a real\nNpgsqlConnection against the shared Testcontainers PG 17 container\ninstead of MockDbConnection. My and Ss stay on the mock.\n\nIsolation strategy is transactional by default:\n - PostgresTestContainer.EnsureBaselineAsync() creates the shared\n   quarry_test schema, DDL, and seed data exactly once per test process.\n - Each CreateAsync() opens a fresh pooled NpgsqlConnection,\n   SET search_path TO quarry_test, BEGIN.\n - DisposeAsync() ROLLBACKs, closing the connection back to the pool.\n - Near-zero per-test overhead (full suite: +2s for 2990 tests).\n\nTests that need their own schema — migration runner tests,\ntransaction-behavior tests, anything that issues its own BEGIN/COMMIT —\npass useOwnPgSchema: true to CreateAsync(). That path calls\nCreateOwnedSchemaAsync which creates a test_<guid> schema with the\nfull DDL + seed, sets search_path, and DROP SCHEMA CASCADEs on dispose.\n\nPG DDL port of the SQLite harness:\n - Primary keys use GENERATED BY DEFAULT AS IDENTITY (seed with explicit\n   IDs works; subsequent auto-INSERTs auto-generate).\n - REAL → DOUBLE PRECISION (PG's REAL is single-precision, insufficient\n   for the money columns).\n - Identifiers stay double-quoted (case-sensitive, matching the source).\n - DiscountedPrice computed column translates 1:1 to PG 12+ syntax.\n - CREATE VIEW \"Order\" for test-harness table-name aliasing.\n - IDENTITY sequences are advanced past max(seeded_id) after seed so\n   first auto-INSERT doesn't collide.\n\nFull Quarry.Tests suite: 2990/2990 passing (unchanged from pre-upgrade\ncount; the harness change is transparent to existing diagnostic-path\ntests, and no test in the current suite depends on Pg mock-capture\nbehavior that the real connection would break).\n\n* Add focused PG integration tests + fix MigrationRunner DateTime type (#258)\n\nPhases 5–7 combined. Adds the four focused integration tests that drive\nevery generator + runtime code path PR #261 touched, all against the real\nNpgsql 10 + PG 17 container:\n\n - Quarry.Tests/Integration/PostgresIntegrationTests.cs:\n   - EntityInsert_OnPostgreSQL_ExecutesSuccessfully\n     (CarrierEmitter.EmitCarrierInsertTerminal)\n   - InsertBatch_OnPostgreSQL_ExecutesSuccessfully\n     (TerminalBodyEmitter batch path)\n   - WhereInCollection_OnPostgreSQL_ExecutesSuccessfully\n     (TerminalEmitHelpers.EmitCollectionPartsPopulation)\n - Quarry.Tests/Migration/PostgresMigrationRunnerTests.cs:\n   - RunAsync_InsertsHistoryRow_OnPostgreSQL — closes the original #258\n     scenario end-to-end. Uses a per-test fresh PG schema because\n     MigrationRunner issues its own BEGIN/COMMIT, incompatible with\n     QueryTestHarness's outer transactional rollback.\n\nThese tests surfaced a second pre-existing PG bug in MigrationRunner\nthat was hiding behind the parameter-binding bug: InsertHistoryRowAsync\npassed `DateTime.UtcNow.ToString(\"o\")` (a string) for the `applied_at`\nand `started_at` parameters. SQLite's TEXT column tolerated this, but\nPG's `TIMESTAMP NOT NULL` column rejected it with\n`42804: column \"applied_at\" is of type timestamp without time zone but\nexpression is of type text`. Fix: bind the DateTime directly and let\nNpgsql/Microsoft.Data.Sqlite choose the correct wire type. SQLite\ncontinues to pass (Microsoft.Data.Sqlite serialises DateTime to TEXT\ntransparently).\n\nPhases 6 and 7 absorbed into this commit:\n - Phase 6 (helper dedup) is unnecessary: MigrationRunner lives in the\n   Quarry package, not Quarry.Migration, so the migration-runner test\n   belongs in Quarry.Tests alongside the existing SQLite one. No\n   cross-project helper linking needed.\n - Phase 7 (cross-dialect PG triage) produced no work items: the full\n   Quarry.Tests run after the harness upgrade passes with only the\n   single MigrationRunner DateTime bug surfaced above. All 3312 tests\n   green across Quarry.Tests / Quarry.Migration.Tests / Analyzers.Tests.\n\nNote on IQueryBuilder<T> entity-terminal signature mismatch: the\nAddresses/Warehouses reads use an explicit `.Select(x => x.Field)`\nprojection because the entity-terminal fallback has an unrelated\ninterceptor signature mismatch (CS9144) that is out of scope for this\nfix. Using projected terminals keeps the parameter-binding coverage\nclean without fighting that unrelated issue.\n\n* Tighten RawSqlAsync docs around Npgsql binding modes (#258)\n\nPhase 8 of the redux fix. PR #261 left comments in QuarryContext.cs\nthat asserted \"Npgsql 10 strict binding requires the placeholder and\nthe name to agree\" — a framing that's not quite right and that led the\nrest of PR #261 astray. The empirical probe in NpgsqlParameterBindingTests\nshows that Npgsql switches between named- and positional-binding modes\nbased on whether any DbParameter has a ParameterName set, not based\non what CommandText contains.\n\nRawSqlAsync keeps its @pN + @pN pairing. Users write @pN placeholders;\nthe runtime binds ParameterName = @pN. On PostgreSQL Npgsql rewrites\nthe @pN placeholders to native positional — the same code path that\nworks today. The refreshed XML doc + anchor comment now explain why\nmixing conventions (@pN in SQL + empty name, or $N in SQL + @pN name)\nwould flip Npgsql into the wrong mode, and why the chain-API path\n(which emits $N + empty name) is a different contract that Quarry\ncontrols end-to-end.\n\n* Address review findings (#258)\n\nREMEDIATE phase. Nine review findings classified A fixed together:\n\n#4 (critical) — CarrierEmitter.cs:690 collection-parameter expansion\nnow emits `__pc.ParameterName = \"\"` on PostgreSQL. Pre-fix it reused\nthe `__colNParts` array (which holds `$N` strings for SQL text) as\nParameterName, flipping Npgsql back into named-lookup mode — the exact\nv0.3.1/0.3.2 \"C\" failure configuration for any `.Contains(collection)`\nwhere the collection is not a compile-time constant. SQLite / SqlServer\npaths continue to use `__colNParts[__bi]` as the name (they bind by\nname).\n\n#5 (medium) — QueryTestHarness.CreateAsync wraps all setup in\ntry/catch and unwinds partial state on throw: rolls back the PG tx,\ndrops the owned schema if created, disposes Sqlite/Npgsql/Mock\nconnections. Previously a transient mid-setup exception leaked all\nthree connections until process exit.\n\n#6 (low) — PostgresMigrationRunnerTests.TearDown now logs the\nfailure message to TestContext.Out instead of swallowing silently,\nso accumulating orphan schemas are diagnosable without masking the\ntest result.\n\n#11 (high) — WhereInCollection_OnPostgreSQL_ExecutesSuccessfully now\nsources the array from a helper method so SqlExprAnnotator's\nconstant-inlining pass cannot fold it to literal SQL. Verified by\ninspecting the generated interceptor: the `__col0Len` runtime loop\nIS emitted, and this is the test that would have caught #4.\n\n#13 (medium) — Added CarrierGeneration_WhereInCollection_*\ngenerator-level regression guards for PG (empty ParameterName)\nand SQLite (preserves the __colNParts[__bi] assignment).\n\n#16 (low) — PostgresIntegrationTests changed from `internal class`\nto `public class` to match the other two new PG test fixtures.\n\n#20 (info) — PostgresTestContainer.EnsureBaselineAsync is now\nsafe across concurrent test processes sharing one container: probes\nwhether the baseline tables exist before doing any DDL, and gates the\ncritical section with a PostgreSQL advisory lock. No drop-and-recreate.\n\n#25 (medium) — PostgresTestContainer.GetContainerAsync now catches\nDocker-unavailable exceptions (heuristic on type-name / message for\n\"Docker\", \"Testcontainers\", \"daemon\", \"named pipe\"), caches the\nfailure reason, and calls Assert.Ignore with a clear \"Install Docker\nto run the Quarry test suite\" message. Developers without Docker see\na clean Ignored result for every PG-backed test instead of cascading\nexceptions.\n\nFull suite: 2996 Quarry.Tests + 201 Quarry.Migration.Tests + 117\nQuarry.Analyzers.Tests = 3314 passing.\n\nRebuild requirement (#21) is surfaced in the PR body — not a code\nchange.\n\n* Record PR #266 in session log\n\n* Record PR #266 in workflow\n\n* [WIP] Phase 9 bootstrap: OrderBy Pg mirror + NUMERIC DDL bug identified\n\nSuspending mid-Phase-9 for handoff. Full state in\n_sessions/258-fix-npgsql-parameter-naming-redux/handoff.md.\n\nWorking tree:\n - CrossDialectOrderByTests.cs: 4 tests mirrored with pg execution\n - PostgresTestContainer.cs: doc comment updated to describe NUMERIC(18,2)\n   for decimal columns, but the DDL still emits DOUBLE PRECISION (the bug)\n - workflow.md: status=suspended, phase=IMPLEMENT, phase-9 session log entry\n\nVerified failure:\n  CrossDialectOrderByTests.OrderBy_Joined_RightTableColumn on Pg:\n  'Reading as System.Decimal is not supported for fields having\n  DataTypeName double precision'\n\nNext session should (a) fix decimal columns to NUMERIC(18, 2), (b) re-run\nOrderBy tests green, (c) roll the pattern across the other ~25 files\nsmallest-first per handoff.md.\n\nPR #266 is not affected by this WIP — it is rebased + CI-green on an\nearlier commit and remains mergeable today.\n\n* Fix decimal column DDL in PG test harness (NUMERIC vs DOUBLE PRECISION) (#258)\n\nPostgresTestContainer.CreateSchemaObjectsAsync emitted DOUBLE PRECISION\nfor every decimal-backed column (orders.Total, order_items.UnitPrice/\nLineTotal, accounts.Balance/credit_limit, products.Price/DiscountedPrice)\nbecause the SQLite source schema used REAL for all non-integer numerics.\n\nPG's DOUBLE PRECISION is IEEE 754 binary float (= .NET double); Npgsql\nrefuses GetDecimal on a double-precision column (\"Reading as 'System.Decimal'\nis not supported for fields having DataTypeName 'double precision'\").\n\nProduction DDL is unaffected: Quarry/Migration/SqlTypeMapper.cs already\nmaps decimal -> numeric(p,s) on PostgreSQL. Bug was contained to the test\nharness port from SQLite.\n\nUnblocks Phase 9 Pg-execute mirror in CrossDialectOrderByTests.OrderBy_\nJoined_RightTableColumn (decimal tuple assertions) and any later test that\nreads a decimal column on Pg.\n\nTests: 2996 / 2996 (Quarry.Tests) - no regressions.\n\n* Phase 9: mirror Pg execution across all CrossDialect tests (#258)\n\nLite-only `await lt.ExecuteXxxAsync()` blocks now mirrored with the\nparallel `await pg.ExecuteXxxAsync()` block applying the same assertions\nto the Pg result, across 22 CrossDialect*Tests files in src/Quarry.Tests/\nSqlOutput (~233 mirror blocks added). This closes the test-coverage gap\nthat hid PR #261's Npgsql parameter-naming regression: cross-dialect\ntests previously only verified SQL-string shape on Pg, never executed\nthrough the real provider.\n\nTest-harness DDL alignment with `Quarry.Migration.SqlTypeMapper`\n(`PostgresTestContainer.CreateSchemaObjectsAsync`):\n- Col<bool>          INTEGER     -> BOOLEAN          (+seed 1/0 -> TRUE/FALSE)\n- Col<DateTime>      TEXT        -> TIMESTAMP\n- Col<DateTimeOffset>TEXT        -> TIMESTAMPTZ\n- FOREIGN KEYs from SQLite source dropped: SQLite does not enforce FKs\n  by default; replicating them in PG breaks delete-tests that legitimately\n  depend on no FK enforcement.\n\nThree PG-vs-Lite divergences triaged inline:\n- `Select_Distinct`: pgResults sorted by UserId before assertions; PG\n  does not guarantee insertion-order return without ORDER BY.\n- `Join_Distinct_OrderBy_Limit`: Pg execution intentionally not mirrored;\n  PG rejects DISTINCT with ORDER BY on a non-projected column (42P10),\n  which SQLite tolerates. SQL-text assertion still verifies generator\n  output is identical across dialects.\n- `Cte_TwoChainedWiths_DistinctDtos_CapturedParams`: workaround for an\n  unrelated Quarry source-generator bug in chained-With dispatch\n  (variable renamed `orderCutoff` -> `cutoff` so the closure shape\n  matches Chain_3's expected fields). Bug to be filed as a follow-up\n  issue at REMEDIATE; out of scope for #258.\n\n`quarry-manifest.postgresql.md` regenerated by the source generator to\nreflect the expanded Pg execution surface.\n\nTests: 2996 + 201 + 117 = 3314, all green.\n\n* Reference follow-up issues #267 and #268 in Phase 9 triage comments\n\nIssues filed:\n- #267 — Generator emits non-portable SELECT DISTINCT + ORDER BY on PG (42P10).\n  Skipped Pg execution in Join_Distinct_OrderBy_Limit; comment now points to\n  the tracking issue and notes the re-enable condition.\n- #268 — Source generator chained-With dispatch resolves wrong closure-field\n  extractor by structural shape. Comment in Cte_TwoChainedWiths_DistinctDtos\n  _CapturedParams now points to #268 and notes that \"cutoff\" should be\n  reverted to \"orderCutoff\" once the generator is fixed.\n\nworkflow.md decision log updated with the issue numbers.\n\n* Add #267/#268 references to pr-body.md (PR #266 body already pushed)\n\n* Archive issue bodies for #269 (MySQL) and #270 (SQL Server)\n\n* Add row-order sort helper + apply at 11 Pg-execute sites (REMEDIATE A/B)\n\nPhase 9 review surfaced a latent flake hazard: 11 cross-dialect tests\nasserted on `pgResults[N]` indexed positions without an explicit\n`ORDER BY` in the chain. PG does not guarantee row order from a base\nscan or join without ORDER BY; the suite passes today only because PG\nhappens to return small-table sequential-scan results in heap order.\nA planner change (statistics, parallel scan, hash join chosen for a\nCTE) would surface as flake in CI.\n\nFix:\n- New `src/Quarry.Tests/PgRowOrderExtensions.cs` exposes\n  `Task<List<T>>.SortedByAsync(keySelector)`. Materialises and sorts\n  the result before assertion. Centralises the rationale comment so\n  future test authors get the explanation in one place.\n- Helper is an extension on Task<List<T>> (not PreparedQuery<T>) so\n  the Quarry chain analyzer (QRY036) still sees `.ExecuteFetchAllAsync()`\n  as the literal terminal at the end of the prepared chain.\n\nSites updated (11):\n- CrossDialectSelectTests.Select_Distinct (replaces inline `.OrderBy(...).ToList()`)\n- CrossDialectNavigationJoinTests.NavigationJoin_Where_ExecutesCorrectly\n- CrossDialectNavigationJoinTests.NavigationJoin_GroupBy_Navigation\n- CrossDialectNavigationJoinTests.NavigationJoin_DeepChain_ExecutesCorrectly\n  (sorts by (ProductName, UserName) since the projection has no ID\n  column; pg-expected values updated to alphabetic-tuple order;\n  lite-expected values stay in insertion order — same asymmetric\n  pattern as Select_Distinct)\n- CrossDialectCteTests (7 sites):\n  - Cte_FromCte_CapturedParam\n  - Cte_FromCte_AllColumns\n  - Cte_TwoChainedWiths_DistinctDtos_CapturedParams\n  - Cte_ThreeChainedWiths_AllUsedDownstream\n  - Cte_TwoChainedWiths_FirstEmptySecondCaptured_CapturedParam\n  - Cte_FromCte_DedicatedDto\n\nCloses review findings #4 (medium, A) and #13 (low, B). Tests:\n2996/2996 green.\n\n* Update pr-body.md with REMEDIATE pass + dual-review summary\n\n* chore: remove session artifacts before merge",
+          "timestamp": "2026-04-25T14:57:02Z",
+          "url": "https://github.com/Dtronix/Quarry/commit/920e8625e71031b336d527700f7956af4a89cb64"
+        },
+        "date": 1777132144155,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateAvgBenchmarks.Quarry_Avg",
+            "value": 18375.579696655273,
+            "unit": "ns",
+            "range": "± 103.85465660667758",
+            "allocated": 960
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateCountBenchmarks.Quarry_Count",
+            "value": 8230.26567186628,
+            "unit": "ns",
+            "range": "± 96.16534474621608",
+            "allocated": 936
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateSumBenchmarks.Quarry_Sum",
+            "value": 18177.070610633262,
+            "unit": "ns",
+            "range": "± 131.33861904615358",
+            "allocated": 960
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ColdStartBenchmarks.Quarry_ColdStart",
+            "value": 188600.16990309494,
+            "unit": "ns",
+            "range": "± 984.2529087968405",
+            "allocated": 27152
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexJoinFilterPaginateBenchmarks.Quarry_JoinFilterPaginate",
+            "value": 32223.003056117468,
+            "unit": "ns",
+            "range": "± 338.68840021611595",
+            "allocated": 2568
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexMultiJoinAggregateBenchmarks.Quarry_MultiJoinAggregate",
+            "value": 53182.22586568197,
+            "unit": "ns",
+            "range": "± 209.21391573193117",
+            "allocated": 1096
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ConditionalBranchBenchmarks.Quarry_ConditionalQuery",
+            "value": 85509.13373819987,
+            "unit": "ns",
+            "range": "± 355.98091209415765",
+            "allocated": 8312
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteMultiBenchmarks.Quarry_MultiCte",
+            "value": 109724.48072228066,
+            "unit": "ns",
+            "range": "± 593.430556713258",
+            "allocated": 8752
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteProjectionBenchmarks.Quarry_CteProjection",
+            "value": 105556.87758225661,
+            "unit": "ns",
+            "range": "± 979.9975053315337",
+            "allocated": 8624
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteSimpleBenchmarks.Quarry_SimpleCte",
+            "value": 105982.0340200571,
+            "unit": "ns",
+            "range": "± 496.9587585032617",
+            "allocated": 8632
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow_Inlined",
+            "value": 43771.46153846154,
+            "unit": "ns",
+            "range": "± 427.40917463725856",
+            "allocated": 552
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow",
+            "value": 48357.083333333336,
+            "unit": "ns",
+            "range": "± 500.8624304561326",
+            "allocated": 856
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereActiveBenchmarks.Quarry_WhereActive",
+            "value": 183795.2729679988,
+            "unit": "ns",
+            "range": "± 843.819237639796",
+            "allocated": 27096
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById",
+            "value": 16547.1671295166,
+            "unit": "ns",
+            "range": "± 173.6868076646324",
+            "allocated": 1336
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById_Parameterized",
+            "value": 18027.41626412528,
+            "unit": "ns",
+            "range": "± 145.9740409880722",
+            "allocated": 1664
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereCompoundBenchmarks.Quarry_WhereCompound",
+            "value": 81465.47467912946,
+            "unit": "ns",
+            "range": "± 778.1636225204542",
+            "allocated": 9008
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertBatchBenchmarks.Quarry_BatchInsert10",
+            "value": 120837.44736842105,
+            "unit": "ns",
+            "range": "± 859.0881777070521",
+            "allocated": 15648
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertSingleBenchmarks.Quarry_SingleInsert",
+            "value": 56530.9375,
+            "unit": "ns",
+            "range": "± 674.5711199223796",
+            "allocated": 1592
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinInnerBenchmarks.Quarry_InnerJoin",
+            "value": 139094.87397112165,
+            "unit": "ns",
+            "range": "± 1184.8926854865317",
+            "allocated": 14464
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinThreeTableBenchmarks.Quarry_ThreeTableJoin",
+            "value": 413696.8469238281,
+            "unit": "ns",
+            "range": "± 3692.0788527463365",
+            "allocated": 47424
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationFirstPageBenchmarks.Quarry_FirstPage",
+            "value": 34678.64491489955,
+            "unit": "ns",
+            "range": "± 327.2428853777442",
+            "allocated": 3976
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationLimitOffsetBenchmarks.Quarry_LimitOffset",
+            "value": 34643.1528508113,
+            "unit": "ns",
+            "range": "± 195.89694980470114",
+            "allocated": 3984
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectAllBenchmarks.Quarry_SelectAll",
+            "value": 200598.06439208984,
+            "unit": "ns",
+            "range": "± 1696.6638886461508",
+            "allocated": 29152
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectProjectionBenchmarks.Quarry_SelectProjection",
+            "value": 89860.80280949519,
+            "unit": "ns",
+            "range": "± 442.38721098262107",
+            "allocated": 10400
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetExceptBenchmarks.Quarry_Except",
+            "value": 89858.37653057392,
+            "unit": "ns",
+            "range": "± 378.65816273582453",
+            "allocated": 9112
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetIntersectBenchmarks.Quarry_Intersect",
+            "value": 126139.14518855169,
+            "unit": "ns",
+            "range": "± 543.600909989772",
+            "allocated": 9048
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetUnionAllBenchmarks.Quarry_UnionAll",
+            "value": 75133.9407865084,
+            "unit": "ns",
+            "range": "± 202.04355216870562",
+            "allocated": 9832
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringContainsBenchmarks.Quarry_Contains",
+            "value": 33824.92946879069,
+            "unit": "ns",
+            "range": "± 123.80891069815655",
+            "allocated": 2088
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringStartsWithBenchmarks.Quarry_StartsWith",
+            "value": 101379.03035794772,
+            "unit": "ns",
+            "range": "± 790.6908794903683",
+            "allocated": 10360
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryCountBenchmarks.Quarry_CountSubquery",
+            "value": 487045.0398995536,
+            "unit": "ns",
+            "range": "± 2714.642832349709",
+            "allocated": 1120
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryExistsBenchmarks.Quarry_Exists",
+            "value": 333833.3535970052,
+            "unit": "ns",
+            "range": "± 1336.0081248477418",
+            "allocated": 10472
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryFilteredExistsBenchmarks.Quarry_FilteredExists",
+            "value": 410313.97216796875,
+            "unit": "ns",
+            "range": "± 1426.006624678667",
+            "allocated": 8632
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubquerySumBenchmarks.Quarry_SumSubquery",
+            "value": 491075.4498697917,
+            "unit": "ns",
+            "range": "± 2025.1568330894283",
+            "allocated": 1128
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ThroughputBenchmarks.Quarry_Throughput",
+            "value": 19225022.088942308,
+            "unit": "ns",
+            "range": "± 102380.59010387046",
+            "allocated": 1923200
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow_Inlined",
+            "value": 42233.52631578947,
+            "unit": "ns",
+            "range": "± 1278.2083689382953",
+            "allocated": 576
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow",
+            "value": 45693.25,
+            "unit": "ns",
+            "range": "± 441.8514833440455",
+            "allocated": 880
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowLagBenchmarks.Quarry_Lag",
+            "value": 371340.5763221154,
+            "unit": "ns",
+            "range": "± 2526.324168756444",
+            "allocated": 16016
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRankBenchmarks.Quarry_Rank",
+            "value": 211731.98161433294,
+            "unit": "ns",
+            "range": "± 820.2459773347741",
+            "allocated": 6440
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRowNumberBenchmarks.Quarry_RowNumber",
+            "value": 195272.60071739784,
+            "unit": "ns",
+            "range": "± 1229.1143053729704",
+            "allocated": 6448
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRunningSumBenchmarks.Quarry_RunningSum",
+            "value": 292553.3020958534,
+            "unit": "ns",
+            "range": "± 1322.712810124158",
             "allocated": 16048
           }
         ]

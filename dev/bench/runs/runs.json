@@ -1,5 +1,11 @@
 [
   {
+    "sha": "aebf88d9a6bc37eb3e6b1503d93a20d2a5b1de9f",
+    "message": "Fix DISTINCT + ORDER BY non-projected column emits subquery wrap (#267) (#275)",
+    "date": "2026-04-25T19:59:30-04:00",
+    "file": "2026-04-25-aebf88d9.html"
+  },
+  {
     "sha": "a55b5786174a49e18ae4dbb9ba7f3b78972a24f1",
     "message": "Mirror PG execution coverage to SQL Server: Testcontainers.MsSql + real SqlConnection on Ss + cross-dialect mirror (#270) (#276)",
     "date": "2026-04-25T18:00:56-04:00",

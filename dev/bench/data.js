@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777157589041,
+  "lastUpdate": 1777164726123,
   "repoUrl": "https://github.com/Dtronix/Quarry",
   "entries": {
     "Quarry Benchmarks": [
@@ -4831,6 +4831,308 @@ window.BENCHMARK_DATA = {
             "value": 296938.2109750601,
             "unit": "ns",
             "range": "± 1817.2846813703197",
+            "allocated": 16048
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "DJGosnell",
+            "email": "DJGosnell@users.noreply.github.com",
+            "username": "DJGosnell"
+          },
+          "committer": {
+            "name": "GitHub",
+            "email": "noreply@github.com",
+            "username": "web-flow"
+          },
+          "id": "aebf88d9a6bc37eb3e6b1503d93a20d2a5b1de9f",
+          "message": "Fix DISTINCT + ORDER BY non-projected column emits subquery wrap (#267) (#275)\n\n* Fix DISTINCT + ORDER BY non-projected column emits subquery wrap (#267)\n\nPostgreSQL rejected `SELECT DISTINCT <proj> ... ORDER BY <expr>` (42P10) when\n<expr> wasn't in the projection. SQL Server rejected the same construct under\nstandard rules. SQLite/MySQL tolerated it but with implementation-defined row\nselection (one row per projection key picked arbitrarily, ordered by an\nundefined column value).\n\nThe generator now wraps such queries in a derived table on all four dialects:\nthe inner SELECT carries DISTINCT plus the original projection and any ORDER BY\nexpressions that aren't in the projection; the outer SELECT projects the\noriginal columns ordered by the inner aliases, with pagination applied to the\nouter. Detection compares the dialect-rendered SQL strings of ORDER BY\nexpressions against rendered projection-column references — all-in-projection\nkeeps the flat form (regression-guard test included).\n\nBehavior change: chains of the form `OrderBy(non-projected).Distinct().Select(proj)`\nnow return one row per (proj, orderby) pair across all dialects instead of one\nrow per proj with an arbitrary orderby value. The previous SQLite/MySQL\nbehavior was implementation-defined, not contractual; PG was already broken.\n\nThe `Join_Distinct_OrderBy_Limit` cross-dialect SQL assertion is updated to the\nwrap shape (one shape, dialect-specific quoting/pagination only). The PG\nexecute mirror — previously skipped because of 42P10 — is re-enabled and\nasserts the same 3-row result as SQLite. Five focused tests cover the wrap,\nthe regression-guard, multi-column projections, descending direction, and\nmixed in/out-of-projection ORDER BY terms.\n\n* Remediate review findings: param-index threading, refactor, alias readability (#267)\n\nAddresses the structured review on 267-fix-pg-distinct-orderby:\n\nCorrectness\n- Pre-count body params (JOIN/WHERE/GROUP/HAVING) and walk plan.OrderTerms with\n  pre-allocated per-term offsets so the wrap renders extra ORDER BY exprs at the\n  post-body global slot. Without this, a chain like OrderBy(o.Total + bias)\n  with a captured `bias` produced colliding @p slots between ORDER BY and WHERE.\n  Advances paramIndex past all OrderBy slots before pagination.\n- Documented the empty-projection early-return as defensive (Quarry chains\n  always populate Projection.Columns through explicit Select or implicit\n  identity projection); added no-Select regression test.\n\nCodebase consistency\n- Extracted AppendFromAndJoinsForPlan, AppendWhereForMask, AppendGroupByAndHaving.\n  Both RenderSelectSql (flat) and RenderSelectSqlWithDistinctOrderByWrap now share\n  these helpers — eliminates ~110 lines of duplication.\n- Extracted AppendProjectionColumnSql shared by RenderProjectionColumnRef\n  (detection), AppendSelectColumns (flat path), and the wrap's inner-projection\n  emission. Detection and emission can no longer drift.\n\nAliasing readability\n- Inner column aliases now use the projection's PropertyName (or the explicit\n  aggregate Alias) rather than synthetic __c{i}: emits `\"t0\".\"UserName\" AS \"UserName\"`\n  instead of `AS \"__c0\"`. Manifests and diagnostics are noticeably cleaner.\n- Derived table alias: `d` (was `__d`). ORDER BY-only aliases stay synthetic `_o{i}`.\n\nTests added\n- Distinct_OrderBy_NonProjectedExprWithCapturedParam_ThreadsParamIndex:\n  guards the param-slot fix across all four dialects.\n- Distinct_MultipleOrderBy_AllInProjection_NoWrap: regression guard for the\n  flat shape when every ORDER BY term is projected.\n- Distinct_OrderBy_NoExplicitSelect_OrderByEntityColumn_StaysFlat: confirms the\n  implicit-identity projection path doesn't trigger spurious wrapping.\n- Distinct_OrderBy_NonProjected_NavAggregateProjection_KeepsAliasInWrap:\n  exercises the aggregate-keeps-Alias branch via Select((u, OrderCount: u.Orders.Count())).\n- Existing descending test gained SQLite + PG execute mirrors verifying row order.\n\nAll 3005 Quarry.Tests + 117 Quarry.Analyzers.Tests pass.\n\n* Add conditional-mask wrap dispatch test (#267 follow-up)\n\nLocks the `MayNeedDistinctOrderByWrap → canBatch=false` fallback in `Assemble`:\nchain reassignment with `if` produces a 2-mask plan; mask=0 is verified flat\n(`SELECT DISTINCT \"UserName\" ...`) and mask=1 is verified wrap (`SELECT \"d\".\"UserName\"\nFROM (SELECT DISTINCT ... AS \"_o0\" ...)`). Without the per-mask single-rendering\nfallback, the batch fast path would lose the wrap shape on multi-mask chains.\n\nDocuments that GROUP BY + Distinct + OrderBy(non-projected) is unreachable\nthrough the Quarry chain API (after `GroupBy(g).Select(...)` only the GROUP BY\nkey columns and aggregates are in scope, so OrderBy on a non-projected column\ncannot bind), with an explanatory comment in the test file.\n\n* Add release-notes-next.md staging convention (#267 follow-up)\n\nEstablishes a per-PR release-notes staging file at\n`docs/articles/releases/release-notes-next.md` so user-visible changes\naccumulate between tags rather than being reconstructed from PR descriptions\nat release time. The file uses the same Appendix template as\n`release-notes-vX.Y.Z.md` (Highlights / Breaking Changes / New Features /\nBug Fixes / Migration Guide / Stats / Full Changelog) — PRs append entries\nunder the appropriate section as they're merged.\n\n- Seeds the staging file with #267's Behavior Changes + Bug Fixes entry.\n- `llm.md` § Release Notes Workflow documents the contributor side: when\n  to add an entry, when to leave it untouched, and that the file is\n  consumed and deleted by the release skill.\n- `llm-release.md` is updated end-to-end to read the staging file in\n  Phase 1, seed the draft from it in Phase 2.3, then delete it in a new\n  Phase 3.4 so the deletion lands in the same `Release vX.Y.Z` commit.\n\nPR descriptions remain the authoritative source — the staging file is a\ncurated, edited summary that captures the contributor's intended framing\nfor the release.\n\n* chore: remove session artifacts before merge",
+          "timestamp": "2026-04-25T23:59:30Z",
+          "url": "https://github.com/Dtronix/Quarry/commit/aebf88d9a6bc37eb3e6b1503d93a20d2a5b1de9f"
+        },
+        "date": 1777164726096,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateAvgBenchmarks.Quarry_Avg",
+            "value": 18490.700735238883,
+            "unit": "ns",
+            "range": "± 59.121648223566986",
+            "allocated": 960
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateCountBenchmarks.Quarry_Count",
+            "value": 8239.511318751744,
+            "unit": "ns",
+            "range": "± 64.03901262046563",
+            "allocated": 936
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateSumBenchmarks.Quarry_Sum",
+            "value": 18401.548790564902,
+            "unit": "ns",
+            "range": "± 134.41338158155918",
+            "allocated": 960
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ColdStartBenchmarks.Quarry_ColdStart",
+            "value": 185608.07078334264,
+            "unit": "ns",
+            "range": "± 1217.279497186786",
+            "allocated": 27152
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexJoinFilterPaginateBenchmarks.Quarry_JoinFilterPaginate",
+            "value": 32797.130994524276,
+            "unit": "ns",
+            "range": "± 510.5340150833223",
+            "allocated": 2568
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexMultiJoinAggregateBenchmarks.Quarry_MultiJoinAggregate",
+            "value": 54505.27400425502,
+            "unit": "ns",
+            "range": "± 541.4000201494562",
+            "allocated": 1096
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ConditionalBranchBenchmarks.Quarry_ConditionalQuery",
+            "value": 85903.29626464844,
+            "unit": "ns",
+            "range": "± 825.5321416483545",
+            "allocated": 8312
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteMultiBenchmarks.Quarry_MultiCte",
+            "value": 107891.02401297433,
+            "unit": "ns",
+            "range": "± 684.7572459349332",
+            "allocated": 8752
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteProjectionBenchmarks.Quarry_CteProjection",
+            "value": 104097.57016225961,
+            "unit": "ns",
+            "range": "± 382.27488298902625",
+            "allocated": 8624
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteSimpleBenchmarks.Quarry_SimpleCte",
+            "value": 104692.51077706473,
+            "unit": "ns",
+            "range": "± 693.9140901389309",
+            "allocated": 8632
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow_Inlined",
+            "value": 46080.916666666664,
+            "unit": "ns",
+            "range": "± 421.5949064582199",
+            "allocated": 552
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow",
+            "value": 50497.38461538462,
+            "unit": "ns",
+            "range": "± 604.094161874005",
+            "allocated": 856
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereActiveBenchmarks.Quarry_WhereActive",
+            "value": 203636.79816545759,
+            "unit": "ns",
+            "range": "± 1654.94252362815",
+            "allocated": 27096
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById",
+            "value": 16550.845642089844,
+            "unit": "ns",
+            "range": "± 172.7572262625861",
+            "allocated": 1336
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById_Parameterized",
+            "value": 17669.076108492336,
+            "unit": "ns",
+            "range": "± 89.19957927645378",
+            "allocated": 1664
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereCompoundBenchmarks.Quarry_WhereCompound",
+            "value": 80968.93183244977,
+            "unit": "ns",
+            "range": "± 840.6512568074436",
+            "allocated": 9008
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertBatchBenchmarks.Quarry_BatchInsert10",
+            "value": 122636.35185185185,
+            "unit": "ns",
+            "range": "± 3236.8749732716883",
+            "allocated": 15640
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertSingleBenchmarks.Quarry_SingleInsert",
+            "value": 52444.166666666664,
+            "unit": "ns",
+            "range": "± 598.537814303754",
+            "allocated": 1592
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinInnerBenchmarks.Quarry_InnerJoin",
+            "value": 138077.89189801898,
+            "unit": "ns",
+            "range": "± 1081.904659632634",
+            "allocated": 14464
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinThreeTableBenchmarks.Quarry_ThreeTableJoin",
+            "value": 386290.00413161056,
+            "unit": "ns",
+            "range": "± 1438.147518307934",
+            "allocated": 47424
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationFirstPageBenchmarks.Quarry_FirstPage",
+            "value": 34279.79839618389,
+            "unit": "ns",
+            "range": "± 185.70243388955876",
+            "allocated": 3976
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationLimitOffsetBenchmarks.Quarry_LimitOffset",
+            "value": 35488.34800502232,
+            "unit": "ns",
+            "range": "± 273.8134019280292",
+            "allocated": 3984
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectAllBenchmarks.Quarry_SelectAll",
+            "value": 198921.17948091947,
+            "unit": "ns",
+            "range": "± 1464.861722310395",
+            "allocated": 29152
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectProjectionBenchmarks.Quarry_SelectProjection",
+            "value": 90389.35693359375,
+            "unit": "ns",
+            "range": "± 458.2169360163761",
+            "allocated": 10400
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetExceptBenchmarks.Quarry_Except",
+            "value": 92876.75365339007,
+            "unit": "ns",
+            "range": "± 522.620454199486",
+            "allocated": 9112
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetIntersectBenchmarks.Quarry_Intersect",
+            "value": 123198.52627328727,
+            "unit": "ns",
+            "range": "± 549.2224843248208",
+            "allocated": 9048
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetUnionAllBenchmarks.Quarry_UnionAll",
+            "value": 73792.98245004508,
+            "unit": "ns",
+            "range": "± 362.27453596247415",
+            "allocated": 9832
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringContainsBenchmarks.Quarry_Contains",
+            "value": 34653.01604285607,
+            "unit": "ns",
+            "range": "± 220.76060573627524",
+            "allocated": 2088
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringStartsWithBenchmarks.Quarry_StartsWith",
+            "value": 103458.9289289202,
+            "unit": "ns",
+            "range": "± 949.4460299873672",
+            "allocated": 10360
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryCountBenchmarks.Quarry_CountSubquery",
+            "value": 484779.25569661456,
+            "unit": "ns",
+            "range": "± 1699.405530894685",
+            "allocated": 1120
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryExistsBenchmarks.Quarry_Exists",
+            "value": 331858.8424353966,
+            "unit": "ns",
+            "range": "± 1324.726113916878",
+            "allocated": 10472
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryFilteredExistsBenchmarks.Quarry_FilteredExists",
+            "value": 420167.6883638822,
+            "unit": "ns",
+            "range": "± 2691.3264680185416",
+            "allocated": 8632
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubquerySumBenchmarks.Quarry_SumSubquery",
+            "value": 489077.9296875,
+            "unit": "ns",
+            "range": "± 3160.0215765845332",
+            "allocated": 1128
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ThroughputBenchmarks.Quarry_Throughput",
+            "value": 19026390.214285713,
+            "unit": "ns",
+            "range": "± 146258.36620382097",
+            "allocated": 1923200
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow_Inlined",
+            "value": 38968.666666666664,
+            "unit": "ns",
+            "range": "± 314.0371527914067",
+            "allocated": 576
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow",
+            "value": 43488.28571428572,
+            "unit": "ns",
+            "range": "± 749.6228978699817",
+            "allocated": 880
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowLagBenchmarks.Quarry_Lag",
+            "value": 357301.5448869978,
+            "unit": "ns",
+            "range": "± 2772.0345371079784",
+            "allocated": 16016
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRankBenchmarks.Quarry_Rank",
+            "value": 210427.32679966517,
+            "unit": "ns",
+            "range": "± 1502.89427281536",
+            "allocated": 6440
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRowNumberBenchmarks.Quarry_RowNumber",
+            "value": 197608.25048828125,
+            "unit": "ns",
+            "range": "± 1051.456310508929",
+            "allocated": 6448
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRunningSumBenchmarks.Quarry_RunningSum",
+            "value": 315088.68502371653,
+            "unit": "ns",
+            "range": "± 3246.88184757429",
             "allocated": 16048
           }
         ]

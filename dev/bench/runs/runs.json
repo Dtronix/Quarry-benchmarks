@@ -1,5 +1,11 @@
 [
   {
+    "sha": "f1968dc96b0577c88b979ad6600b1c9048a80fe0",
+    "message": "Cross-dialect test coverage + dialect-rule hardening (#279)",
+    "date": "2026-04-27T01:34:31-04:00",
+    "file": "2026-04-27-f1968dc9.html"
+  },
+  {
     "sha": "aebf88d9a6bc37eb3e6b1503d93a20d2a5b1de9f",
     "message": "Fix DISTINCT + ORDER BY non-projected column emits subquery wrap (#267) (#275)",
     "date": "2026-04-25T19:59:30-04:00",

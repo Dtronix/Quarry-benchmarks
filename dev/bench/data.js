@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777164726123,
+  "lastUpdate": 1777271249364,
   "repoUrl": "https://github.com/Dtronix/Quarry",
   "entries": {
     "Quarry Benchmarks": [
@@ -5133,6 +5133,308 @@ window.BENCHMARK_DATA = {
             "value": 315088.68502371653,
             "unit": "ns",
             "range": "± 3246.88184757429",
+            "allocated": 16048
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "DJGosnell",
+            "email": "DJGosnell@users.noreply.github.com",
+            "username": "DJGosnell"
+          },
+          "committer": {
+            "name": "GitHub",
+            "email": "noreply@github.com",
+            "username": "web-flow"
+          },
+          "id": "f1968dc96b0577c88b979ad6600b1c9048a80fe0",
+          "message": "Cross-dialect test coverage + dialect-rule hardening (#279)\n\n* Add QRA503 (Error) for unexecutable dialect features\n\nSplits the QRA502 dialect rule into two severities:\n- QRA502 Warning — feature is suboptimal but the SQL still executes\n  (MySQL RIGHT JOIN's planner hint).\n- QRA503 Error — the feature produces SQL the dialect physically rejects\n  (MySQL FULL OUTER JOIN; SQL Server OFFSET/FETCH without ORDER BY).\n\nRemoves the stale SQLite RIGHT JOIN / FULL OUTER JOIN rules. SQLite ≥ 3.39\nhas supported both joins since 2022; Microsoft.Data.Sqlite 10.0.3 ships\nSQLite 3.49.1.\n\nTrims the MySQL line from FullOuterJoin SQL-verification tests (now\nprevented from compiling by QRA503).\n\nPhase 1 of the cross-dialect test coverage plan.\n\n* Add QRA503 full-pipeline analyzer integration tests\n\nAdds nine end-to-end tests that drive the analyzer against real C# source\nstrings using AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync. Covers\nMySQL FULL OUTER JOIN (Error), the three other dialects' negative cases,\nand SQL Server OFFSET/FETCH with/without ORDER BY plus the negative\ndialects.\n\nThese complement the existing rule unit tests by exercising the full\npipeline (UsageSiteDiscovery + ContextParser + QuarryQueryAnalyzer\nwiring), so a regression in any of those paths surfaces here.\n\nPhase 2 of the cross-dialect test coverage plan.\n\n* Add QRY070/QRY071 generator integration tests + fix silent drop\n\nThe pipeline emits QRY070 (IntersectAll) / QRY071 (ExceptAll) /\nQRY072 (SetOperationProjectionMismatch) via DiagnosticInfo. The\ndiagnostics route through QuarryGenerator.GetDescriptorById, which\nlooks them up in s_deferredDescriptors — a hand-maintained list that\nsilently drops anything not registered.\n\nThese three descriptors were missing, so the diagnostics never\nreached consumers. The GeneratorTests.cs comment (\"test infrastructure\ncannot fully resolve these\") was a workaround rationalising the\nsilent drop rather than the real cause.\n\nThis commit:\n- Registers the three missing descriptors in s_deferredDescriptors.\n- Adds eight full-pipeline generator integration tests (INTERSECT ALL\n  + EXCEPT ALL × four dialects) using RunGeneratorWithDiagnostics.\n- Removes the obsolete \"cannot test these\" note.\n\nPhase 3 of the cross-dialect test coverage plan.\n\n* Convert ContainsIntegrationTests to cross-dialect execution\n\nReplaces the SQLite-only ContainsIntegrationTests.cs (7 tests) with\nseven 4-dialect tests split between CrossDialectWhereTests (SELECT\npaths) and CrossDialectDeleteTests (DELETE paths). All exercise the\nruntime collection-expansion path that the existing\n\"static-readonly array\" tests don't cover — the inlined-literals\nconstant-folder is bypassed when the collection is captured as a\nlocal List<int> or IEnumerable<int>.\n\nPhase 4 of the cross-dialect test coverage plan.\n\n* Convert CollectionScalarIntegrationTests to cross-dialect execution\n\nReplaces the SQLite-only CollectionScalarIntegrationTests.cs (7 tests\nexercising runtime collection + scalar parameter mixing — regression\nguard for #140) with seven 4-dialect execution tests appended to\nCrossDialectWhereTests.cs in a new \"Collection + scalar — runtime\nparameter mixing\" region.\n\nSQL-shape verification for parameter index shifting on all four\ndialects already lives in CollectionParameterCollisionTests.cs, so the\nnew tests skip Prepare+AssertDialects (matching the Phase 4 pattern)\nand focus purely on row-count correctness across PG, MySQL, SQL Server,\nand SQLite.\n\nPhase 5 of the cross-dialect test coverage plan.\n\n* Consolidate JoinedCarrier tests into CrossDialectJoinTests\n\nJoinedCarrierIntegrationTests.cs was already a 4-dialect file using\nLite/Pg/My/Ss + Prepare + AssertDialects, so this is a deduplicate +\nrelocate rather than a single-dialect → cross-dialect conversion:\n\n- 4 of 8 tests were exact duplicates of existing CrossDialectJoinTests\n  cases (TwoTable basic, PreJoinWhere with IsActive, ThreeTable,\n  FourTable) — deleted outright.\n- The 4 unique tests moved into CrossDialectJoinTests.cs as new\n  regions: Join_WithWhere_CapturedParam_OnRightTable (captured\n  decimal param vs constant-folded literal), Join_FiveTable_Select\n  (Users → Orders → Items → Shipments → Warehouses),\n  Join_SixTable_Select (+ Accounts back-join), and\n  Join_ThreeTable_ScalarAggregate_Count (Sql.Count() +\n  ExecuteScalarAsync<int>).\n\nNet: -4 NUnit methods (3030 → 3026 in Quarry.Tests).\n\nPhase 6 of the cross-dialect test coverage plan.\n\n* Convert JoinNullable LEFT JOIN tests to cross-dialect execution\n\nJoinNullableIntegrationTests.cs had 8 tests:\n\n- 6 SQLite-only LEFT JOIN null-materialization tests verifying that\n  the generated reader returns language defaults (decimal=0, string=\n  null, int=0, enum=default) instead of crashing with InvalidCast when\n  an unmatched outer-join row produces NULLs for NOT-NULL-in-schema\n  columns. Converted to 4-dialect Prepare+AssertDialects+\n  ExecuteFetchAllAsync in a new \"Left Join — null materialization\n  (4-dialect execution)\" region of JoinNullableProjectionTests.cs.\n  Previously only verified on SQLite; now confirmed on PG, MySQL, and\n  SQL Server too.\n\n- 2 already-cross-dialect SQL+metadata tests (RightJoin /\n  FullOuterJoin) deleted as fully redundant: SQL shapes are covered by\n  RightJoin_Select / FullOuterJoin_OnClause in CrossDialectJoinTests,\n  and the IsJoinNullable metadata flag checks are covered by\n  RightJoin_LeftSideColumnsJoinNullable /\n  FullOuterJoin_BothSidesJoinNullable in JoinNullableProjectionTests.\n\nNet: -8 deleted + 6 added = -2 NUnit methods (3026 → 3024 in Quarry.Tests).\n\nPhase 7 of the cross-dialect test coverage plan.\n\n* Convert DateTimeOffset round-trip tests to cross-dialect\n\nPhase 8 has two parts:\n\n1. Wire-up: PgDb / MyDb / SsDb were missing the Events() entity\n   accessor even though the events table was already seeded in all\n   three Testcontainers (PG TIMESTAMPTZ / MySQL DATETIME / SS\n   DATETIMEOFFSET). Added one line per context; the source generator\n   wires up the Pg.Event / My.Event / Ss.Event types from the existing\n   EventSchema.\n\n2. Tests: replaced DateTimeOffsetIntegrationTests.cs (3 SQLite-only\n   tests) with 4 cross-dialect tests in a new \"DateTimeOffset\n   Round-Trip Tests\" region of CrossDialectTypeMappingTests.cs:\n\n   - SelectEvent_LaunchRow_UtcOffset_RoundTripsOnAllDialects\n   - SelectEvent_ReviewRow_NonUtcOffset_PreservesUtcInstantExceptMySql\n   - InsertThenSelect_DateTimeOffset_UtcOffset_RoundTripsOnAllDialects\n   - InsertThenSelect_NullableDateTimeOffset_UtcOffset_RoundTripsOnAllDialects\n\n   Insert tests use UTC-zero offsets so all four dialects round-trip\n   identically. The Review row (offset +02:00) uses .UtcDateTime for\n   instant comparison; MySQL is excluded with a comment explaining\n   that the MySQL DATETIME seed strips the offset entirely (the seed\n   value 14:00 lands at UTC 14:00, while SQLite/PG/SS land at UTC\n   12:00 — a property of MySQL DATETIME storage and the seed choice,\n   not a Quarry round-trip bug).\n\nNet: -3 deleted + 4 added = +1 NUnit method (3024 → 3025 in\nQuarry.Tests).\n\nPhase 8 of the cross-dialect test coverage plan.\n\n* Add cross-dialect execution coverage to PrepareTests\n\nPrepareIntegrationTests.cs already had 4-dialect SQL coverage\n(Prepare on every dialect + AssertDialects) but only executed against\nSQLite. Lifted that intent into a new \"Prepare — 4-dialect execution\"\nregion of PrepareTests.cs with 6 tests:\n\n- Prepare_SingleTerminal_FetchAll_4Dialect\n- Prepare_SingleTerminal_FetchFirst_4Dialect\n- Prepare_MultiTerminal_DiagnosticsThenFetchAll_4Dialect\n  (verifies one prepared chain serves both terminals stably)\n- Prepare_Delete_NoMatch_4Dialect\n- Prepare_Update_NoMatch_4Dialect\n- Prepare_BatchInsert_4Dialect\n\nTwo Integration tests were dropped as redundant:\nMultiTerminal_ToSqlAndFetchAll (just a no-where variant of\nMultiTerminal_DiagnosticsAndFetchAll) and\nMultiTerminal_DiagnosticsAndToSql_SameSql (fully covered by existing\nPrepare_MultiTerminal_ToDiagnosticsAndToSql_ProduceSameSql in\nPrepareTests).\n\nNet: -8 deleted + 6 added = -2 NUnit methods (3025 → 3023 in\nQuarry.Tests).\n\nPhase 9 of the cross-dialect test coverage plan.\n\n* Phase 10: defer [EntityReader] cross-dialect conversion to #277\n\nPhase 10 was originally planned to convert\nIntegration/EntityReaderIntegrationTests.cs to a 4-dialect file.\nInvestigation surfaced a generator bug: [EntityReader] resolves the\nreader's T only in the schema's namespace, so PgDb/MyDb/SsDb\ninterceptors emit IQueryBuilder<Pg.Product, Quarry.Tests.Samples.Product>\ninstead of <…, Pg.Product>. The chain compiles via Unsafe.As<> casts\ninternally but the call site can't accept the projection's static\noutput type for any non-Lite context.\n\nThe two-layer fix (per-context partials/readers + generator-side\nper-context lookup) touches 5+ generator files, adds new IR fields,\nand changes [EntityReader] resolution semantics for every consumer —\northogonal to \"convert SQLite-only tests to cross-dialect.\"\n\nFiled issue #277 with the full repro, location pointers, and a\nphased fix plan. Integration/EntityReaderIntegrationTests.cs stays\nas SQLite-only coverage in this PR. Phase 10 closed without a code\nchange beyond this session-log entry.\n\n* Convert RawSqlIntegrationTests to cross-dialect execution\n\nReplaces the SQLite-only RawSqlIntegrationTests.cs (17 tests) with\nCrossDialectRawSqlTests.cs (19 tests). Each test executes on all four\ncontexts (Lite / Pg / My / Ss) with per-dialect identifier quoting\n(`\"x\"` for SQLite/Pg, `` `x` `` for MySQL, `[x]` for SQL Server) but\nkeeps `@p0` placeholders on every dialect, matching how the\nRawSqlAsync runtime binds parameters (Npgsql rewrites `@name` to\npositional internally; MySqlConnector and SqlClient accept named\nparameters natively — see QuarryContext.cs:185 docstring).\n\nAlso kept the existing reflection-based NotSupportedException\nfallback test (single-dialect since it tests base-class behavior, not\ndialect-specific execution).\n\nPhase 11 of the cross-dialect test coverage plan.\n\n* Convert LoggingIntegrationTests to cross-dialect execution\n\nReplaces the SQLite-only LoggingIntegrationTests.cs (29 tests) with\nCrossDialectLoggingTests.cs. Each test runs sequentially on\nLite / Pg / My / Ss with `_logger.Clear()` between dialects;\nLogsmithOutput.Logger is a process-wide singleton so the fixture is\n[NonParallelizable].\n\nConnection-lifecycle tests (Opened, PreOpened, Disposed) build fresh\nper-dialect connections from each test container's\nGetConnectionStringAsync.\n\nSensitive-redaction tests (3) intentionally stay SQLite-only with\nexplicit per-test SqliteConnection setup — Pg/My/Ss baselines do not\nseed the widgets table, and the redaction code path runs in\nQuarryContext before SQL is built so single-dialect verification is\nsufficient. Documented in the class docstring.\n\nFixed one parameter type mismatch: Pg TIMESTAMP rejects string-typed\nCreatedAt with PG error 42804; switched to DateTime, which all four\nproviders accept.\n\nPhase 12 of the cross-dialect test coverage plan. Track B complete.\n\n* REMEDIATE: address review findings\n\nA-class fixes:\n- QRA503 now guards ToAsyncEnumerable terminal: added\n  InterceptorKind.ToAsyncEnumerable to IsExecutionSite so\n  Ss.Users().Offset(N).ToAsyncEnumerable() (without OrderBy) fails\n  compilation rather than producing the same parse-time-rejected\n  OFFSET/FETCH SQL the rule was promoted to prevent. Regression test\n  added.\n- Prepare_BatchInsert_4Dialect now actually executes:\n  added 4× ExecuteNonQueryAsync calls with row-count assertions so\n  the BatchInsert path is verified end-to-end on every dialect.\n- Split SuboptimalForDialectRule into two IQueryAnalysisRule\n  implementations to match the 1-rule-1-id pattern of QRA101–QRA501:\n  SuboptimalForDialectRule keeps QRA502 (MySQL RIGHT JOIN perf hint);\n  new UnsupportedForDialectRule emits QRA503 (MySQL FULL OUTER JOIN +\n  SqlServer OFFSET-without-ORDER-BY capability errors). Each rule's\n  Descriptor now matches the id it actually emits. Eight unit tests\n  updated to instantiate the new rule for QRA503 cases.\n\nB-class polish:\n- EntityReaderIntegrationTests.cs gets a remarks block linking #277\n  so a future contributor sees why this file isn't migrated.\n- Sensitive-redaction tests get per-test \"// SQLite-only — provider-\n  independent path\" comments.\n- Connection-lifecycle tests get a NOTE explaining the un-isolated\n  fresh-connection setup; future SELECT-only constraint documented.\n- Added RawSql_ParameterName_IsAlwaysAtPN_AcrossDialects to\n  CrossDialectLoggingTests pinning the @pN runtime convention across\n  all four dialects via the singleton recording logger (lives in the\n  NonParallelizable fixture deliberately).\n\nTests: 3353/3353 (Analyzers 128, Migration 201, Quarry 3024 — net +2\nfrom new regression tests).\n\n* Record PR #279 in workflow.md\n\n* chore: remove session artifacts before merge",
+          "timestamp": "2026-04-27T05:34:31Z",
+          "url": "https://github.com/Dtronix/Quarry/commit/f1968dc96b0577c88b979ad6600b1c9048a80fe0"
+        },
+        "date": 1777271249335,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateAvgBenchmarks.Quarry_Avg",
+            "value": 18633.655144324668,
+            "unit": "ns",
+            "range": "± 91.47313098288899",
+            "allocated": 960
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateCountBenchmarks.Quarry_Count",
+            "value": 8240.801662738506,
+            "unit": "ns",
+            "range": "± 46.14558752889255",
+            "allocated": 936
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateSumBenchmarks.Quarry_Sum",
+            "value": 18670.849959153395,
+            "unit": "ns",
+            "range": "± 75.52225930885834",
+            "allocated": 960
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ColdStartBenchmarks.Quarry_ColdStart",
+            "value": 185452.1259591239,
+            "unit": "ns",
+            "range": "± 1782.4042147023058",
+            "allocated": 27152
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexJoinFilterPaginateBenchmarks.Quarry_JoinFilterPaginate",
+            "value": 32499.198908487957,
+            "unit": "ns",
+            "range": "± 125.00336378017616",
+            "allocated": 2568
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexMultiJoinAggregateBenchmarks.Quarry_MultiJoinAggregate",
+            "value": 54285.53657023112,
+            "unit": "ns",
+            "range": "± 164.81798725884346",
+            "allocated": 1096
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ConditionalBranchBenchmarks.Quarry_ConditionalQuery",
+            "value": 86812.66670109675,
+            "unit": "ns",
+            "range": "± 780.8528746682169",
+            "allocated": 8312
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteMultiBenchmarks.Quarry_MultiCte",
+            "value": 108754.68791707356,
+            "unit": "ns",
+            "range": "± 208.87036921434668",
+            "allocated": 8752
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteProjectionBenchmarks.Quarry_CteProjection",
+            "value": 110417.66625104632,
+            "unit": "ns",
+            "range": "± 949.3772389381173",
+            "allocated": 8624
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteSimpleBenchmarks.Quarry_SimpleCte",
+            "value": 107133.75351388114,
+            "unit": "ns",
+            "range": "± 1018.0807996706891",
+            "allocated": 8632
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow_Inlined",
+            "value": 46302.916666666664,
+            "unit": "ns",
+            "range": "± 173.58490630515576",
+            "allocated": 552
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow",
+            "value": 50400,
+            "unit": "ns",
+            "range": "± 674.4884256706237",
+            "allocated": 856
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereActiveBenchmarks.Quarry_WhereActive",
+            "value": 185661.51042829241,
+            "unit": "ns",
+            "range": "± 1455.2287849430354",
+            "allocated": 27096
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById",
+            "value": 16264.807424692008,
+            "unit": "ns",
+            "range": "± 95.03945133299754",
+            "allocated": 1336
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById_Parameterized",
+            "value": 18257.182743617468,
+            "unit": "ns",
+            "range": "± 180.36346095992116",
+            "allocated": 1664
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereCompoundBenchmarks.Quarry_WhereCompound",
+            "value": 80096.9421735491,
+            "unit": "ns",
+            "range": "± 674.3897608342809",
+            "allocated": 9008
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertBatchBenchmarks.Quarry_BatchInsert10",
+            "value": 126036.5,
+            "unit": "ns",
+            "range": "± 4769.621636985475",
+            "allocated": 15648
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertSingleBenchmarks.Quarry_SingleInsert",
+            "value": 55046.71428571428,
+            "unit": "ns",
+            "range": "± 540.6637556774974",
+            "allocated": 1592
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinInnerBenchmarks.Quarry_InnerJoin",
+            "value": 136801.0424992488,
+            "unit": "ns",
+            "range": "± 855.5967613091118",
+            "allocated": 14464
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinThreeTableBenchmarks.Quarry_ThreeTableJoin",
+            "value": 385348.17428152903,
+            "unit": "ns",
+            "range": "± 1671.4070946539166",
+            "allocated": 47424
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationFirstPageBenchmarks.Quarry_FirstPage",
+            "value": 34811.868854229266,
+            "unit": "ns",
+            "range": "± 142.452089810755",
+            "allocated": 3976
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationLimitOffsetBenchmarks.Quarry_LimitOffset",
+            "value": 35049.23051570012,
+            "unit": "ns",
+            "range": "± 147.4225015946901",
+            "allocated": 3984
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectAllBenchmarks.Quarry_SelectAll",
+            "value": 195837.84878305288,
+            "unit": "ns",
+            "range": "± 982.5584106244022",
+            "allocated": 29152
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectProjectionBenchmarks.Quarry_SelectProjection",
+            "value": 92048.4841026893,
+            "unit": "ns",
+            "range": "± 487.4258189850051",
+            "allocated": 10400
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetExceptBenchmarks.Quarry_Except",
+            "value": 90264.52304513114,
+            "unit": "ns",
+            "range": "± 730.3795886424604",
+            "allocated": 9112
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetIntersectBenchmarks.Quarry_Intersect",
+            "value": 121742.14590219352,
+            "unit": "ns",
+            "range": "± 1006.4431143722676",
+            "allocated": 9048
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetUnionAllBenchmarks.Quarry_UnionAll",
+            "value": 72741.69209507534,
+            "unit": "ns",
+            "range": "± 717.0542833797795",
+            "allocated": 9832
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringContainsBenchmarks.Quarry_Contains",
+            "value": 33828.59190368652,
+            "unit": "ns",
+            "range": "± 172.58316570619513",
+            "allocated": 2088
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringStartsWithBenchmarks.Quarry_StartsWith",
+            "value": 100245.84220668247,
+            "unit": "ns",
+            "range": "± 675.8900351383634",
+            "allocated": 10360
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryCountBenchmarks.Quarry_CountSubquery",
+            "value": 481951.91376201925,
+            "unit": "ns",
+            "range": "± 2016.9040119822844",
+            "allocated": 1120
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryExistsBenchmarks.Quarry_Exists",
+            "value": 324609.2706124442,
+            "unit": "ns",
+            "range": "± 1845.9385241817367",
+            "allocated": 10472
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryFilteredExistsBenchmarks.Quarry_FilteredExists",
+            "value": 417039.1271409255,
+            "unit": "ns",
+            "range": "± 2304.881168434422",
+            "allocated": 8632
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubquerySumBenchmarks.Quarry_SumSubquery",
+            "value": 489803.22235576925,
+            "unit": "ns",
+            "range": "± 3099.921343161439",
+            "allocated": 1128
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ThroughputBenchmarks.Quarry_Throughput",
+            "value": 18588635.95982143,
+            "unit": "ns",
+            "range": "± 149820.2328534674",
+            "allocated": 1923210
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow_Inlined",
+            "value": 39408.166666666664,
+            "unit": "ns",
+            "range": "± 801.4429633663345",
+            "allocated": 576
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow",
+            "value": 44810.23880597015,
+            "unit": "ns",
+            "range": "± 2087.388662170064",
+            "allocated": 880
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowLagBenchmarks.Quarry_Lag",
+            "value": 359427.047921317,
+            "unit": "ns",
+            "range": "± 2654.974595696294",
+            "allocated": 16016
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRankBenchmarks.Quarry_Rank",
+            "value": 214300.71807391828,
+            "unit": "ns",
+            "range": "± 1203.9076318370553",
+            "allocated": 6440
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRowNumberBenchmarks.Quarry_RowNumber",
+            "value": 195412.32825646034,
+            "unit": "ns",
+            "range": "± 1050.449120211239",
+            "allocated": 6448
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRunningSumBenchmarks.Quarry_RunningSum",
+            "value": 300897.9186823918,
+            "unit": "ns",
+            "range": "± 1412.6650911792067",
             "allocated": 16048
           }
         ]

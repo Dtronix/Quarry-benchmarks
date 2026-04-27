@@ -1,5 +1,11 @@
 [
   {
+    "sha": "32aaa92c067d0123a0186d903a2d326488ba0d72",
+    "message": "Generator: per-context [EntityReader] resolution by default (#277) (#278)",
+    "date": "2026-04-27T01:45:17-04:00",
+    "file": "2026-04-27-32aaa92c.html"
+  },
+  {
     "sha": "f1968dc96b0577c88b979ad6600b1c9048a80fe0",
     "message": "Cross-dialect test coverage + dialect-rule hardening (#279)",
     "date": "2026-04-27T01:34:31-04:00",

@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777271249364,
+  "lastUpdate": 1777274255445,
   "repoUrl": "https://github.com/Dtronix/Quarry",
   "entries": {
     "Quarry Benchmarks": [
@@ -5435,6 +5435,308 @@ window.BENCHMARK_DATA = {
             "value": 300897.9186823918,
             "unit": "ns",
             "range": "± 1412.6650911792067",
+            "allocated": 16048
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "DJGosnell",
+            "email": "DJGosnell@users.noreply.github.com",
+            "username": "DJGosnell"
+          },
+          "committer": {
+            "name": "GitHub",
+            "email": "noreply@github.com",
+            "username": "web-flow"
+          },
+          "id": "32aaa92c067d0123a0186d903a2d326488ba0d72",
+          "message": "Generator: per-context [EntityReader] resolution by default (#277) (#278)\n\n* Add per-context Pg/My/Ss Product partials and ProductReader classes (Layer 1)\n\nAdds three per-context partial extensions of Product (each with the\nDisplayLabel property) and three per-context ProductReader classes,\neach EntityReader<Product> resolving to its enclosing per-context\nentity type. Mirrors the existing global ProductReader Read body\nverbatim.\n\nPer-context readers are dead code until Phase 2 lands (the generator\nstill emits the schema-namespace FQN). Phase 1 only ensures the\nreferences exist so Phase 2's generator change can compile.\n\nRefs #277.\n\n* Generator: emit per-context EntityReader FQN for [EntityReader] schemas\n\nAdds string? contextNamespace parameter to two codegen seams:\n- InterceptorCodeGenerator.CollectEntityReaderInstances — emits the\n  cached `private static readonly` reader field at the per-context FQN.\n- ReaderCodeGenerator.GenerateReaderDelegate — references the\n  per-context cached field in the reader-delegate body.\n\nIntroduces InterceptorCodeGenerator.ResolvePerContextReaderFqn which\nrewrites the schema-namespace [EntityReader] FQN by replacing its\nnamespace with the consuming context's namespace while preserving the\nreader's simple name. When schema and context share a namespace, the\nper-context FQN equals the schema-namespace FQN — preserving existing\nbehavior for single-context consumers.\n\nCallers updated:\n- FileEmitter.cs passes the file emitter's contextNamespace.\n- QuarryGenerator.cs passes group.ContextNamespace at chain enrichment.\n\nVerified end-to-end via a temporary canary test that exercised\nPgDb/MyDb/SsDb identity projections with [EntityReader] active. The\ngenerated PgDb interceptor now emits\nIQueryBuilder<Pg.Product, Pg.Product> bound to\n_entityReader_Quarry_Tests_Samples_Pg_ProductReader, and\nExecuteCarrierWithCommandAsync<Pg.Product> for the terminal —\nmatching the per-context entity type at the call site without any\nUnsafe.As papering over a static-type mismatch.\n\nThe projection's TOut already resolved to the per-context entity at\nthe projection-analysis layer, so no further changes were needed\nbeyond the reader-FQN rewrite. The canary was removed; Phase 4 will\nland permanent cross-dialect coverage.\n\nRefs #277.\n\n* Add generator integration tests for per-context [EntityReader] emission\n\nThree tests added to GeneratorTests.cs under\n\"Per-Context EntityReader Resolution (#277)\":\n\n1. RewritesFqnPerContext — schema in App.Schemas referenced by PgDb\n   (App.Pg) and MyDb (App.My), each context provides its own\n   ProductReader. Verifies PgDb's interceptor emits\n   `_entityReader_App_Pg_ProductReader` and MyDb's emits\n   `_entityReader_App_My_ProductReader`. Neither references the\n   schema-namespace App.Schemas.ProductReader.\n\n2. PreservesSchemaNamespaceWhenContextShares — single context in the\n   schema's namespace. Verifies the cached field is\n   `_entityReader_App_ProductReader` (per-context FQN happens to equal\n   schema-namespace FQN, preserving existing behavior).\n\n3. DeduplicatesCachedField — three call sites against the same schema\n   in one context. Verifies exactly one\n   `private static readonly App.Pg.ProductReader _entityReader_App_Pg_ProductReader = new();`\n   declaration, regardless of how many `Read(r)` references there are.\n\nRefs #277.\n\n* Convert EntityReaderIntegrationTests to 4-dialect CrossDialectEntityReaderTests\n\nReplaces src/Quarry.Tests/Integration/EntityReaderIntegrationTests.cs\n(9 SQLite-only tests) with src/Quarry.Tests/SqlOutput/CrossDialectEntityReaderTests.cs\n(8 cross-dialect tests). Each test exercises Lite / Pg / My / Ss\nagainst the existing QueryTestHarness fixtures.\n\nTest coverage in 4 regions:\n- Identity projection — custom reader runs (3 tests):\n  Select_IdentityProjection_UsesCustomReader,\n  Select_IdentityProjection_HandlesNullColumns,\n  Select_IdentityProjection_MultipleRows_AllHaveDisplayLabel.\n- Tuple / single-column projections — custom reader does NOT apply\n  (2 tests): Select_TupleProjection_DoesNotUseCustomReader,\n  Select_SingleColumn_DoesNotUseCustomReader.\n- ExecuteFetchFirst / ExecuteFetchFirstOrDefault — custom reader runs\n  (2 tests): ExecuteFetchFirst_UsesCustomReader,\n  ExecuteFetchFirstOrDefault_UsesCustomReader.\n- Insert + Select round-trip — custom reader runs on materialization\n  (1 test): RoundTrip_InsertThenSelectEntity_UsesCustomReader.\n\nDropped duplicate Select_IdentityWithWhere_UsesCustomReader from the\noriginal (functionally identical to Select_IdentityProjection_UsesCustomReader).\n9 SQLite-only deleted, 8 cross-dialect added; net Quarry.Tests count\ndelta -1 (each new test runs on 4× dialects).\n\nCloses the deferred Phase 10 from the cross-dialect-test-coverage\nworkflow — that work was blocked on the [EntityReader] resolution bug\nbeing fixed first, which Phase 2 of this PR resolved.\n\nManifest deltas (Phase 5 verification — included in this commit):\n- quarry-manifest.sqlite.md: -1 entry (the deleted Integration tests\n  no longer contribute SQLite-only chains; harness's existing\n  cross-dialect chains already cover the patterns).\n- quarry-manifest.{postgresql,mysql,sqlserver}.md: +86 lines each\n  (new Products()-chain entries from Pg/My/Ss execution paths).\n\nAll deltas are direct consequences of the test conversion; no\nunexpected manifest changes.\n\nRefs #277.\n\n* Document per-context EntityReader resolution requirement\n\nAdds a new \"EntityReader\" prose section to llm.md after Custom Type\nMapping, covering:\n- The attribute's purpose (route Select(p => p) through a custom\n  EntityReader<T> for non-column properties / entity-level\n  transformations).\n- Per-context resolution rule: generator looks up the reader at\n  <contextNamespace>.<readerSimpleName>, so each context expects\n  its own reader class in its own namespace.\n- Single-context-same-namespace behavior unchanged (per-context FQN\n  resolves to the same class as the schema-namespace declaration).\n- Missing/mis-declared per-context readers surface as ordinary C#\n  compile errors against the generated interceptor reference —\n  no analyzer rule, no fallback.\n\nRefs #277.\n\n* Add review.md (zero findings; skipped classification)\n\n* Add pr-body.md and link PR #278 in workflow.md\n\n* Address pass-2 review findings (4A): nested-type FQN, chain-shape assertions, missing-reader negative test, set-op/CTE coverage\n\nA1 — InterceptorCodeGenerator.ResolvePerContextReaderFqn now splits\non the last `.` OR `+`, so reader classes nested inside an outer type\n(CLR `+` separator) extract their leaf simple name correctly. XML doc\nexpanded to call out the convention.\n\nA2 — Generator_PerContextEntityReader_RewritesFqnPerContext gained\ntwo regex assertions locking in the post-Select chain shape:\n`IQueryBuilder<App.Pg.Product, App.Pg.Product>` for PgDb and\n`IQueryBuilder<App.My.Product, App.My.Product>` for MyDb. The\nchain-shape contract is now exercised at the generator-test level,\nnot just implicitly via cross-dialect compilation.\n\nA4 — Generator_PerContextEntityReader_MissingPerContextReader_ProducesCompileError\nlocks in the load-bearing user-facing contract of the PR: when a\ncontext lacks a per-context reader, the C# compiler reports\nCS0234/CS0246 against the generated reference. Compiles a chain\nwhere the schema lives in App.Schemas with [EntityReader(typeof(ProductReader))]\nbut App.Pg deliberately has no per-context ProductReader, runs the\ngenerator, and inspects the output compilation's diagnostics.\n\nA5 — Two new cross-dialect tests in CrossDialectEntityReaderTests.cs:\nUnion_IdentityProjection_UsesCustomReader exercises a UNION of two\nidentity-projection chains followed by ExecuteFetchAllAsync (via\n.Prepare() to match the established cross-dialect set-op pattern);\nCte_FromCte_IdentityProjection_UsesCustomReader exercises a CTE inner\nchain whose outer projection is the [EntityReader]-active identity.\nBoth verify DisplayLabel populated by the per-context reader on\nLite/Pg/My/Ss. Joined-identity case skipped — Product has no FK\nrelationships in the existing fixture set, so the pattern is\nunnatural without fixture changes outside this PR's scope.\n\nManifest deltas reflect the new chain shapes (Union, CTE, missing-reader\ntest compilation) on each dialect.\n\nTests: 3345/3345 passing (was 3342, +3 from new tests).\n\nRefs #277.\n\n* Refresh manifests after rebase merge with #279\n\nManifests were resolved with --ours during the rebase to avoid\nhand-merging the +86-line PR-overlap regions. Re-running the full\ntest suite regenerated them against the post-rebase state, picking\nup entries from both PR #277 (this branch) and PR #279 (cross-dialect\ntest coverage, merged before this rebase).\n\n* chore: remove session artifacts before merge",
+          "timestamp": "2026-04-27T05:45:17Z",
+          "url": "https://github.com/Dtronix/Quarry/commit/32aaa92c067d0123a0186d903a2d326488ba0d72"
+        },
+        "date": 1777274255418,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateAvgBenchmarks.Quarry_Avg",
+            "value": 18627.594128926594,
+            "unit": "ns",
+            "range": "± 82.91021092631938",
+            "allocated": 960
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateCountBenchmarks.Quarry_Count",
+            "value": 8273.4335534232,
+            "unit": "ns",
+            "range": "± 77.37303684807269",
+            "allocated": 936
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateSumBenchmarks.Quarry_Sum",
+            "value": 18787.592952183313,
+            "unit": "ns",
+            "range": "± 164.0308314786067",
+            "allocated": 960
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ColdStartBenchmarks.Quarry_ColdStart",
+            "value": 188191.8143484933,
+            "unit": "ns",
+            "range": "± 1725.7335746116516",
+            "allocated": 27152
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexJoinFilterPaginateBenchmarks.Quarry_JoinFilterPaginate",
+            "value": 33045.9188319615,
+            "unit": "ns",
+            "range": "± 369.5262639297975",
+            "allocated": 2568
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexMultiJoinAggregateBenchmarks.Quarry_MultiJoinAggregate",
+            "value": 53909.381033090445,
+            "unit": "ns",
+            "range": "± 347.7631932915634",
+            "allocated": 1096
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ConditionalBranchBenchmarks.Quarry_ConditionalQuery",
+            "value": 85739.13919771634,
+            "unit": "ns",
+            "range": "± 1073.2356369645922",
+            "allocated": 8312
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteMultiBenchmarks.Quarry_MultiCte",
+            "value": 107643.8415876116,
+            "unit": "ns",
+            "range": "± 655.4056085133454",
+            "allocated": 8752
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteProjectionBenchmarks.Quarry_CteProjection",
+            "value": 105571.31758626302,
+            "unit": "ns",
+            "range": "± 257.5166270018378",
+            "allocated": 8624
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteSimpleBenchmarks.Quarry_SimpleCte",
+            "value": 108278.42987060547,
+            "unit": "ns",
+            "range": "± 279.2059140396734",
+            "allocated": 8632
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow_Inlined",
+            "value": 46760.153846153844,
+            "unit": "ns",
+            "range": "± 357.6175438821586",
+            "allocated": 552
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow",
+            "value": 51222,
+            "unit": "ns",
+            "range": "± 387.5256815311133",
+            "allocated": 856
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereActiveBenchmarks.Quarry_WhereActive",
+            "value": 185537.84852013222,
+            "unit": "ns",
+            "range": "± 703.8279647847194",
+            "allocated": 27096
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById",
+            "value": 16411.521768423227,
+            "unit": "ns",
+            "range": "± 50.86539116181202",
+            "allocated": 1336
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById_Parameterized",
+            "value": 17979.501650129045,
+            "unit": "ns",
+            "range": "± 198.11663260102128",
+            "allocated": 1664
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereCompoundBenchmarks.Quarry_WhereCompound",
+            "value": 80751.89536539714,
+            "unit": "ns",
+            "range": "± 171.058196498068",
+            "allocated": 9008
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertBatchBenchmarks.Quarry_BatchInsert10",
+            "value": 131730.8,
+            "unit": "ns",
+            "range": "± 9354.997286735654",
+            "allocated": 17080
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertSingleBenchmarks.Quarry_SingleInsert",
+            "value": 56033.92307692308,
+            "unit": "ns",
+            "range": "± 430.7979924006265",
+            "allocated": 1592
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinInnerBenchmarks.Quarry_InnerJoin",
+            "value": 133743.0196940104,
+            "unit": "ns",
+            "range": "± 405.7692692912184",
+            "allocated": 14464
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinThreeTableBenchmarks.Quarry_ThreeTableJoin",
+            "value": 386241.1524564303,
+            "unit": "ns",
+            "range": "± 2202.1057758061947",
+            "allocated": 47424
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationFirstPageBenchmarks.Quarry_FirstPage",
+            "value": 34598.923527644234,
+            "unit": "ns",
+            "range": "± 299.02429493984295",
+            "allocated": 3976
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationLimitOffsetBenchmarks.Quarry_LimitOffset",
+            "value": 35746.425969050484,
+            "unit": "ns",
+            "range": "± 249.81349132141935",
+            "allocated": 3984
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectAllBenchmarks.Quarry_SelectAll",
+            "value": 196352.8137394832,
+            "unit": "ns",
+            "range": "± 959.6287436213066",
+            "allocated": 29152
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectProjectionBenchmarks.Quarry_SelectProjection",
+            "value": 89097.51392540566,
+            "unit": "ns",
+            "range": "± 712.7084345240528",
+            "allocated": 10400
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetExceptBenchmarks.Quarry_Except",
+            "value": 90961.63960148738,
+            "unit": "ns",
+            "range": "± 654.0223256881994",
+            "allocated": 9112
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetIntersectBenchmarks.Quarry_Intersect",
+            "value": 122812.1409818209,
+            "unit": "ns",
+            "range": "± 1071.0979722992545",
+            "allocated": 9048
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetUnionAllBenchmarks.Quarry_UnionAll",
+            "value": 74604.66059758113,
+            "unit": "ns",
+            "range": "± 315.0397306867552",
+            "allocated": 9832
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringContainsBenchmarks.Quarry_Contains",
+            "value": 34647.69917179988,
+            "unit": "ns",
+            "range": "± 218.14824161968298",
+            "allocated": 2088
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringStartsWithBenchmarks.Quarry_StartsWith",
+            "value": 107507.39040902945,
+            "unit": "ns",
+            "range": "± 630.2500436628895",
+            "allocated": 10360
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryCountBenchmarks.Quarry_CountSubquery",
+            "value": 483402.31208147324,
+            "unit": "ns",
+            "range": "± 2684.8529295941457",
+            "allocated": 1120
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryExistsBenchmarks.Quarry_Exists",
+            "value": 336160.46369280136,
+            "unit": "ns",
+            "range": "± 3474.5061492339596",
+            "allocated": 10472
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryFilteredExistsBenchmarks.Quarry_FilteredExists",
+            "value": 415901.5792142428,
+            "unit": "ns",
+            "range": "± 1649.075310746852",
+            "allocated": 8632
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubquerySumBenchmarks.Quarry_SumSubquery",
+            "value": 501534.0603376116,
+            "unit": "ns",
+            "range": "± 4342.509006986424",
+            "allocated": 1128
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ThroughputBenchmarks.Quarry_Throughput",
+            "value": 18900719.69471154,
+            "unit": "ns",
+            "range": "± 68852.69692663572",
+            "allocated": 1923200
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow_Inlined",
+            "value": 41324.642857142855,
+            "unit": "ns",
+            "range": "± 470.5877841990404",
+            "allocated": 576
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow",
+            "value": 45851.46153846154,
+            "unit": "ns",
+            "range": "± 637.4554383621148",
+            "allocated": 880
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowLagBenchmarks.Quarry_Lag",
+            "value": 361491.57477678574,
+            "unit": "ns",
+            "range": "± 3323.176434811344",
+            "allocated": 16016
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRankBenchmarks.Quarry_Rank",
+            "value": 210759.97269112724,
+            "unit": "ns",
+            "range": "± 1055.5120396570783",
+            "allocated": 6440
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRowNumberBenchmarks.Quarry_RowNumber",
+            "value": 197943.70054408483,
+            "unit": "ns",
+            "range": "± 1413.1388393995564",
+            "allocated": 6448
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRunningSumBenchmarks.Quarry_RunningSum",
+            "value": 294680.23884465144,
+            "unit": "ns",
+            "range": "± 1687.7791416971259",
             "allocated": 16048
           }
         ]

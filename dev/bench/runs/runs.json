@@ -1,5 +1,11 @@
 [
   {
+    "sha": "3be1cf2145377521b956f196e7f92a64badd3cbc",
+    "message": "Fix: SQL Server window-function int projections throw InvalidCastException (#287)",
+    "date": "2026-04-29T17:59:27-04:00",
+    "file": "2026-04-29-3be1cf21.html"
+  },
+  {
     "sha": "c3f3f01a7c82dba597cb7a8cd0cd28079bbb9792",
     "message": "Extend IEntityAccessor<T> with chain-continuation methods (#281) (#284)",
     "date": "2026-04-29T17:34:31-04:00",

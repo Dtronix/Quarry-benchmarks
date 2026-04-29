@@ -1,5 +1,11 @@
 [
   {
+    "sha": "c3f3f01a7c82dba597cb7a8cd0cd28079bbb9792",
+    "message": "Extend IEntityAccessor<T> with chain-continuation methods (#281) (#284)",
+    "date": "2026-04-29T17:34:31-04:00",
+    "file": "2026-04-29-c3f3f01a.html"
+  },
+  {
     "sha": "0e80b509d8316c6c4dcd352e858882522b4e1392",
     "message": "Wide-tuple projection coverage (TRest) + fix empty-alias on CTE post-Select (#282)",
     "date": "2026-04-29T09:19:21-04:00",

@@ -1,5 +1,11 @@
 [
   {
+    "sha": "0e80b509d8316c6c4dcd352e858882522b4e1392",
+    "message": "Wide-tuple projection coverage (TRest) + fix empty-alias on CTE post-Select (#282)",
+    "date": "2026-04-29T09:19:21-04:00",
+    "file": "2026-04-29-0e80b509.html"
+  },
+  {
     "sha": "32aaa92c067d0123a0186d903a2d326488ba0d72",
     "message": "Generator: per-context [EntityReader] resolution by default (#277) (#278)",
     "date": "2026-04-27T01:45:17-04:00",

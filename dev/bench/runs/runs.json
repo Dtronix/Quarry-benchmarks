@@ -1,5 +1,11 @@
 [
   {
+    "sha": "a0711fff9fd10f9089341cd06ede3f394f2ff5bb",
+    "message": "Generator: replace flat SqlDialect with SqlDialectConfig carrier; fix MySQL LIKE-escape on default sql_mode (#273) (#288)",
+    "date": "2026-04-29T20:34:48-04:00",
+    "file": "2026-04-30-a0711fff.html"
+  },
+  {
     "sha": "8e66443d19eb25a494035e7b7a61c834ba7a7036",
     "message": "Analyzer: warn on ThenBy without OrderBy and Having without GroupBy (#283) (#289)",
     "date": "2026-04-29T18:48:43-04:00",

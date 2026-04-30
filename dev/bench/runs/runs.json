@@ -1,5 +1,11 @@
 [
   {
+    "sha": "4e8579aadaf04bf113effcbd1bab98211d1fd221",
+    "message": "Fix silent default(T) binding for captured vars in OrderBy/GroupBy/Join + add QRY037 (#293)",
+    "date": "2026-04-30T18:17:54-04:00",
+    "file": "2026-04-30-4e8579aa.html"
+  },
+  {
     "sha": "774476df000a2ceaea2bd85b89f5f7c2ffe1fc70",
     "message": "Document QRY019 errorMessage punctuation contract (#291)",
     "date": "2026-04-30T15:57:35-04:00",

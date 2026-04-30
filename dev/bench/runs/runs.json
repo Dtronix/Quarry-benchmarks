@@ -1,5 +1,11 @@
 [
   {
+    "sha": "b0f8d370ba25213e4f3013cf4ba4cd5d38cc2783",
+    "message": "Fix: DISTINCT wrap detection cast-mismatch on SQL Server (#286) (#292)",
+    "date": "2026-04-30T09:23:51-04:00",
+    "file": "2026-04-30-b0f8d370.html"
+  },
+  {
     "sha": "e603f7b7a3deb907a5646cb650dbd42cdff92aed",
     "message": "Add source-generator pipeline benchmarks (#290)",
     "date": "2026-04-30T06:29:55-04:00",

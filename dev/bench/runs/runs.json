@@ -1,5 +1,11 @@
 [
   {
+    "sha": "8e66443d19eb25a494035e7b7a61c834ba7a7036",
+    "message": "Analyzer: warn on ThenBy without OrderBy and Having without GroupBy (#283) (#289)",
+    "date": "2026-04-29T18:48:43-04:00",
+    "file": "2026-04-29-8e66443d.html"
+  },
+  {
     "sha": "3be1cf2145377521b956f196e7f92a64badd3cbc",
     "message": "Fix: SQL Server window-function int projections throw InvalidCastException (#287)",
     "date": "2026-04-29T17:59:27-04:00",

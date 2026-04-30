@@ -1,5 +1,11 @@
 [
   {
+    "sha": "774476df000a2ceaea2bd85b89f5f7c2ffe1fc70",
+    "message": "Document QRY019 errorMessage punctuation contract (#291)",
+    "date": "2026-04-30T15:57:35-04:00",
+    "file": "2026-04-30-774476df.html"
+  },
+  {
     "sha": "b0f8d370ba25213e4f3013cf4ba4cd5d38cc2783",
     "message": "Fix: DISTINCT wrap detection cast-mismatch on SQL Server (#286) (#292)",
     "date": "2026-04-30T09:23:51-04:00",

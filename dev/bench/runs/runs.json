@@ -1,5 +1,11 @@
 [
   {
+    "sha": "e603f7b7a3deb907a5646cb650dbd42cdff92aed",
+    "message": "Add source-generator pipeline benchmarks (#290)",
+    "date": "2026-04-30T06:29:55-04:00",
+    "file": "2026-04-30-e603f7b7.html"
+  },
+  {
     "sha": "a0711fff9fd10f9089341cd06ede3f394f2ff5bb",
     "message": "Generator: replace flat SqlDialect with SqlDialectConfig carrier; fix MySQL LIKE-escape on default sql_mode (#273) (#288)",
     "date": "2026-04-29T20:34:48-04:00",

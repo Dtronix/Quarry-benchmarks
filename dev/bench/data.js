@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777512472909,
+  "lastUpdate": 1777548449948,
   "repoUrl": "https://github.com/Dtronix/Quarry",
   "entries": {
     "Quarry Benchmarks": [
@@ -7248,6 +7248,357 @@ window.BENCHMARK_DATA = {
             "unit": "ns",
             "range": "± 1185.126504150945",
             "allocated": 16048
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "DJGosnell",
+            "email": "DJGosnell@users.noreply.github.com",
+            "username": "DJGosnell"
+          },
+          "committer": {
+            "name": "GitHub",
+            "email": "noreply@github.com",
+            "username": "web-flow"
+          },
+          "id": "e603f7b7a3deb907a5646cb650dbd42cdff92aed",
+          "message": "Add source-generator pipeline benchmarks (#290)\n\n* Phase 1: add csproj plumbing for generator benchmarks\n\nAdd Microsoft.CodeAnalysis.CSharp 5.0.0 PackageReference (matches the\nversion pinned by Quarry.Generator and Quarry.Tests) so the benchmarks\nproject can construct CSharpCompilation/CSharpGeneratorDriver directly.\nQuarry.Generator privatizes its Roslyn assets via PrivateAssets=\"all\",\nso consumers must reference the package separately.\n\nAdd Corpora\\v1\\**\\*.cs.txt EmbeddedResource glob in preparation for\nthe corpus files added in later phases. The .cs.txt extension prevents\nthe bench project from compiling them; they are loaded via\nAssembly.GetManifestResourceStream at [GlobalSetup].\n\nIncludes the workflow.md and plan.md session artifacts.\n\n* Phase 2: add GeneratorBenchmarkBase harness + smoke test\n\nGeneratorBenchmarkBase provides the shared compile/drive primitives\nfor the generator benchmarks: LoadCorpus (embedded resource lookup),\nParse (LanguageVersion.Latest), BuildCompilation (DLL output, nullable\nenabled), and RunGenerator (fresh QuarryGenerator per call). The\nreference set mirrors what GeneratorTests/IncrementalCachingTests use\nand is built once via Lazy<>.\n\nGeneratorBenchmarkHarnessTests guards against silent reference-set\nregressions: if BuildReferences ever drops a runtime assembly the\ngenerator depends on, the generator emits zero trees but benchmarks\nstill report timings (a no-op disguised as a measurement). The test\nruns the harness over a trivial inline source and asserts an entity\nclass is generated.\n\nTo make the harness testable, Quarry.Tests now references\nQuarry.Benchmarks. This forced a Microsoft.Data.Sqlite version\nalignment in Quarry.Tests (10.0.3 -> 10.0.5) to match the version\nalready pinned in Quarry.Benchmarks.\n\n* Phase 3: add shared fixture corpus for generator benchmarks\n\nAuthors the v1 fixture under Corpora/v1/Fixture/ — five Schema-derived\nclasses (User, Order, OrderItem, Product, Address) plus a single\nPostgreSQL [QuarryContext] partial class that exposes IEntityAccessor\nproperties for all five entities. Type names match Quarry.Tests.Samples\nso query snippets ported into the Throughput/PipelineSplit corpora in\nlater phases reference the same User/Order/etc. types as the source\nmaterial.\n\nFiles use a real .cs extension (with <Compile Remove> + <EmbeddedResource\nInclude>) rather than .cs.txt: MSBuild's resource pipeline interprets\nthe inner \".cs.\" as a Czech locale suffix and routes such files into a\nsatellite cs/Quarry.Benchmarks.resources.dll, leaving the main assembly\nwith zero embedded resources. The .cs / Compile Remove / EmbeddedResource\npattern keeps full editor support without the locale collision.\n\nLoadCorpus updated to match the resulting resource names\n(`Quarry.Benchmarks.Corpora.v1.<path>.<name>.cs`).\n\nExtends GeneratorBenchmarkHarnessTests with Fixture_Compiles_AndGenerates\nEntityClasses, asserting the generator emits an entity class .g.cs file\nending in each of User/Order/OrderItem/Product/Address. Catches a\nfixture or harness regression before benchmark numbers can drift.\n\n* Phase 4: add Quarry_GeneratorColdCompile benchmark\n\nSingle [Benchmark] method that builds a CSharpCompilation from the\nfixture corpus + a placeholder Medium-size query block (one trivial\ncall site for now; expanded to ~50 in Phase 5) and runs QuarryGenerator\nend-to-end. SyntaxTree parsing is hoisted to [GlobalSetup] so each\niteration measures only the generator's own work, not Roslyn parsing.\n\nReturns GeneratedTrees.Length to keep the call from being eliminated\nby JIT dead-code analysis. MemoryDiagnoser records allocations per\ngenerator run.\n\nVerified locally with --job dry: ~3 ms steady-state, ~840 KB allocated\nagainst the placeholder corpus.\n\n* Phase 5: add Quarry_Throughput_{Small,Medium,Large} benchmarks + corpora\n\nThree [Benchmark] methods running QuarryGenerator over the fixture\nplus a corpus of 10 / 50 / 200 query call sites. Each call site is a\ndistinct Q-method at a unique location so the generator emits a\nseparate interceptor per query — surfaces both absolute regressions\nand O(n^2) regressions across ~1.5 orders of magnitude.\n\nCorpora are hand-curated: ten query shapes (Where, Select-anonymous,\nSelect-tuple, OrderBy+Limit, GroupBy+Count, GroupBy+Sum/Avg/Min/Max,\nJoin, Distinct, single-col aggregate, multi-predicate Where) rotated\nacross the five entities and varied by column / projection / literal /\noperator. Methods are pure no-side-effect call-site builders ending in\n.Prepare() to ensure the generator sees every site.\n\nFixes uncovered while wiring the harness verification:\n- UserSchema.cs and OrderSchema.cs were missing `using System;` for\n  DateTime — added.\n- Initial corpora used EF-style OrderByDescending and OrderBy/Limit\n  before Select. Quarry's API uses OrderBy(x, Direction.Descending)\n  and requires Select before OrderBy/Limit. All three corpora updated.\n\nExtends GeneratorBenchmarkHarnessTests with a [TestCase]-parameterized\ntest that loads each corpus, runs the generator, asserts (a) the\npost-generation compilation is error-free, (b) the corpus declares the\nexpected Q-method count, and (c) at least one interceptor file is\nemitted. Catches a corpus regression before benchmark numbers go weird.\n\n* Phase 6: add Quarry_Pipeline_{SchemaOnly,PlusQueries,PlusMigrations}\n\nThree [Benchmark] methods over cumulative pipeline-split corpora:\n- SchemaOnly: empty placeholder — only the fixture is input. Fires\n  Pipeline 1 (Schema/Context/Entity) only.\n- PlusQueries: ~50 query call sites (same set as Throughput/Medium at\n  v1, but kept as a separate file so a future Medium edit does not\n  silently shift the split numbers). Fires Pipeline 1 + 2.\n- PlusMigrations: PlusQueries content + 1 [MigrationSnapshot] + 10\n  [Migration] classes with empty Upgrade/Downgrade/Backup bodies.\n  Fires Pipeline 1 + 2 + 3.\n\nCost differences attribute per-pipeline:\n  Cost(SchemaOnly)               = Pipeline 1 baseline\n  Cost(PlusQueries) - SchemaOnly = Pipeline 2 (Interceptors)\n  Cost(PlusMigrations) - PlusQueries = Pipeline 3 (Migrations)\n\nMigration classes need Backup(MigrationBuilder) in addition to\nUpgrade/Downgrade — the generated MigrateAsync.g.cs invokes Backup on\nevery migration class. Discovered via the post-generation compile\ndiagnostic check in the new harness test.\n\nExtends GeneratorBenchmarkHarnessTests with a [TestCase] verifying each\ncorpus's expected pipeline outputs:\n- All three: post-generation compilation must be error-free, and\n  Pipeline 1 must emit the entity classes.\n- SchemaOnly: no interceptor file, no MigrateAsync.\n- PlusQueries: interceptor file present, no MigrateAsync.\n- PlusMigrations: both interceptor and MigrateAsync present.\nCatches a corpus regression that would silently zero-out a pipeline.\n\n* Phase 7: end-to-end generator-benchmark output verification\n\nRan 'dotnet run --project src/Quarry.Benchmarks -c Release --\n--filter *Generator* --job short' locally. Verified:\n- All 7 Quarry_* generator benchmark methods complete without errors.\n- BenchmarkDotNet emits one *-report-full.json per benchmark class.\n- Mirroring the gh-pages publish filter (select(.Method | startswith\n  (\"Quarry_\"))) returns all 7 methods, each with valid Statistics.Mean\n  and Memory.BytesAllocatedPerOperation.\n- MemoryDiagnoser produces non-zero allocations (306 KB - 44 MB range,\n  scaling with corpus size).\n\nLocal numbers (DefaultJob) for record:\n- ColdCompile (Medium fixture):           ~56 ms / 11.4 MB\n- Throughput Small (10 queries):          ~12 ms /  2.5 MB\n- Throughput Medium (50 queries):         ~61 ms / 12.4 MB\n- Throughput Large (200 queries):        ~264 ms / 43.3 MB\n- Pipeline SchemaOnly:                     ~1 ms / 306 KB\n- Pipeline PlusQueries (~50 queries):     ~57 ms / 11.4 MB\n- Pipeline PlusMigrations (+10 migrations):~57 ms / 11.5 MB\n\nPipeline-split attribution at v1 corpus sizes:\n  Pipeline 1 (Schema/Context):  ~1 ms baseline\n  Pipeline 2 (Interceptors):   ~+56 ms over baseline at Medium\n  Pipeline 3 (Migrations):     ~negligible for 10 trivial migrations\n\nPhase produces no new code — verification gate before REVIEW.\n\n* REMEDIATE: address review findings (5A, all addressed)\n\nA#7  Hoist per-iter SyntaxTree[] allocation. RunWith now consumes a\n     pre-built array per corpus stored in [GlobalSetup] — measurement is\n     strictly compile + drive.\nA#16 Switch migration-output detection in PipelineSplit_Corpora_Fire\n     ExpectedPipelines from a string-search of generated tree text to a\n     filename-pattern check (.MigrateAsync.g.cs). Less brittle to\n     unrelated emitter changes.\nA#22 Dedupe FixtureFiles array. Now lives on GeneratorBenchmarkBase as\n     protected static IReadOnlyList<string>; new ParseFixturePlus helper\n     wraps the fixture+corpus parse in one call. Three benchmark classes\n     each shrink to a few lines.\nA#27 Add a uniform `// CORPUS — embedded resource ...` marker line to\n     every Corpora/v1/**/*.cs file so future maintainers don't confuse\n     them with real Schemas/.\nA#30 Cut transitive package surface. Extracted GeneratorBenchmarkBase +\n     Corpora into a new minimal-deps project Quarry.Benchmarks.Generator\n     Harness (refs only Microsoft.CodeAnalysis.CSharp + Quarry +\n     Quarry.Generator). Quarry.Tests now references the harness project,\n     not Quarry.Benchmarks. Quarry.Tests.deps.json no longer contains\n     BenchmarkDotNet, Dapper, Microsoft.EntityFrameworkCore.Sqlite, or\n     SqlKata. Restore + bin footprint for Tests is back to where it was\n     pre-branch.\n\nLocal end-to-end re-run: ColdCompile ~56 ms / 11.4 MB matches Phase 7\nnumbers; harness tests 8/8 green; full suite 3393/0.\n\nReview classifications and Action Taken column updated in review.md.\n\n* REMEDIATE: record PR #290 in workflow state\n\n* chore: remove session artifacts before merge",
+          "timestamp": "2026-04-30T10:29:55Z",
+          "url": "https://github.com/Dtronix/Quarry/commit/e603f7b7a3deb907a5646cb650dbd42cdff92aed"
+        },
+        "date": 1777548449915,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateAvgBenchmarks.Quarry_Avg",
+            "value": 17890.188014103816,
+            "unit": "ns",
+            "range": "± 133.69901759521736",
+            "allocated": 960
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateCountBenchmarks.Quarry_Count",
+            "value": 8569.199792715219,
+            "unit": "ns",
+            "range": "± 65.20867571508188",
+            "allocated": 936
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateSumBenchmarks.Quarry_Sum",
+            "value": 19118.008185753457,
+            "unit": "ns",
+            "range": "± 166.73993095274633",
+            "allocated": 960
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ColdStartBenchmarks.Quarry_ColdStart",
+            "value": 185488.64336286273,
+            "unit": "ns",
+            "range": "± 1778.1616395861654",
+            "allocated": 27152
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexJoinFilterPaginateBenchmarks.Quarry_JoinFilterPaginate",
+            "value": 32079.06905255999,
+            "unit": "ns",
+            "range": "± 346.7138524326172",
+            "allocated": 2568
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexMultiJoinAggregateBenchmarks.Quarry_MultiJoinAggregate",
+            "value": 52472.151540902945,
+            "unit": "ns",
+            "range": "± 308.94888605808285",
+            "allocated": 1096
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ConditionalBranchBenchmarks.Quarry_ConditionalQuery",
+            "value": 89716.8746773856,
+            "unit": "ns",
+            "range": "± 1109.2050425935538",
+            "allocated": 8312
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteMultiBenchmarks.Quarry_MultiCte",
+            "value": 106843.00734165737,
+            "unit": "ns",
+            "range": "± 603.6920644404407",
+            "allocated": 8752
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteProjectionBenchmarks.Quarry_CteProjection",
+            "value": 104838.52403041294,
+            "unit": "ns",
+            "range": "± 906.9154853343464",
+            "allocated": 8624
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteSimpleBenchmarks.Quarry_SimpleCte",
+            "value": 109208.46153846153,
+            "unit": "ns",
+            "range": "± 700.1562787891652",
+            "allocated": 8632
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow_Inlined",
+            "value": 45828.78571428572,
+            "unit": "ns",
+            "range": "± 718.765520615989",
+            "allocated": 552
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow",
+            "value": 50532.28846153846,
+            "unit": "ns",
+            "range": "± 1893.5646676183226",
+            "allocated": 856
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereActiveBenchmarks.Quarry_WhereActive",
+            "value": 185817.26443917412,
+            "unit": "ns",
+            "range": "± 1138.132605281232",
+            "allocated": 27096
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById",
+            "value": 16100.75888296274,
+            "unit": "ns",
+            "range": "± 115.2856594814277",
+            "allocated": 1336
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById_Parameterized",
+            "value": 17545.864072359524,
+            "unit": "ns",
+            "range": "± 91.64293850797472",
+            "allocated": 1664
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereCompoundBenchmarks.Quarry_WhereCompound",
+            "value": 80884.04452950614,
+            "unit": "ns",
+            "range": "± 495.37437231928936",
+            "allocated": 9008
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertBatchBenchmarks.Quarry_BatchInsert10",
+            "value": 125121.57692307692,
+            "unit": "ns",
+            "range": "± 2658.390658621519",
+            "allocated": 15648
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertSingleBenchmarks.Quarry_SingleInsert",
+            "value": 55687.61538461538,
+            "unit": "ns",
+            "range": "± 289.326383882038",
+            "allocated": 1592
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinInnerBenchmarks.Quarry_InnerJoin",
+            "value": 134086.3313176082,
+            "unit": "ns",
+            "range": "± 1110.8019492204332",
+            "allocated": 14464
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinThreeTableBenchmarks.Quarry_ThreeTableJoin",
+            "value": 391817.2253417969,
+            "unit": "ns",
+            "range": "± 3163.0867189272894",
+            "allocated": 47424
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationFirstPageBenchmarks.Quarry_FirstPage",
+            "value": 34165.14886983236,
+            "unit": "ns",
+            "range": "± 129.92168551611795",
+            "allocated": 3976
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationLimitOffsetBenchmarks.Quarry_LimitOffset",
+            "value": 35264.03545270647,
+            "unit": "ns",
+            "range": "± 415.1059641204225",
+            "allocated": 3984
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectAllBenchmarks.Quarry_SelectAll",
+            "value": 196985.94810267858,
+            "unit": "ns",
+            "range": "± 1433.885974891703",
+            "allocated": 29152
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectProjectionBenchmarks.Quarry_SelectProjection",
+            "value": 89897.84243539664,
+            "unit": "ns",
+            "range": "± 694.8183292524931",
+            "allocated": 10400
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetExceptBenchmarks.Quarry_Except",
+            "value": 90780.69264573317,
+            "unit": "ns",
+            "range": "± 609.9037417256324",
+            "allocated": 9112
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetIntersectBenchmarks.Quarry_Intersect",
+            "value": 119693.40948486328,
+            "unit": "ns",
+            "range": "± 505.4002394473393",
+            "allocated": 9048
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetUnionAllBenchmarks.Quarry_UnionAll",
+            "value": 75911.76369803293,
+            "unit": "ns",
+            "range": "± 632.5424145148306",
+            "allocated": 9832
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringContainsBenchmarks.Quarry_Contains",
+            "value": 34056.64133707682,
+            "unit": "ns",
+            "range": "± 198.27388311885764",
+            "allocated": 2088
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringStartsWithBenchmarks.Quarry_StartsWith",
+            "value": 99930.3709341196,
+            "unit": "ns",
+            "range": "± 397.1741934708092",
+            "allocated": 10360
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryCountBenchmarks.Quarry_CountSubquery",
+            "value": 486558.62939453125,
+            "unit": "ns",
+            "range": "± 4424.593547728128",
+            "allocated": 1120
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryExistsBenchmarks.Quarry_Exists",
+            "value": 319930.7833533654,
+            "unit": "ns",
+            "range": "± 1186.9250291730662",
+            "allocated": 10472
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryFilteredExistsBenchmarks.Quarry_FilteredExists",
+            "value": 420068.52521623886,
+            "unit": "ns",
+            "range": "± 3229.1743215785928",
+            "allocated": 8632
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubquerySumBenchmarks.Quarry_SumSubquery",
+            "value": 490174.78336588544,
+            "unit": "ns",
+            "range": "± 1570.2117028179189",
+            "allocated": 1128
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ThroughputBenchmarks.Quarry_Throughput",
+            "value": 18848151.30357143,
+            "unit": "ns",
+            "range": "± 125957.96970773762",
+            "allocated": 1923200
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow_Inlined",
+            "value": 40860.666666666664,
+            "unit": "ns",
+            "range": "± 293.36413405785504",
+            "allocated": 576
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow",
+            "value": 45112.653846153844,
+            "unit": "ns",
+            "range": "± 483.9063005296663",
+            "allocated": 880
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowLagBenchmarks.Quarry_Lag",
+            "value": 364107.0618373326,
+            "unit": "ns",
+            "range": "± 2305.010255993998",
+            "allocated": 16016
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRankBenchmarks.Quarry_Rank",
+            "value": 216333.39950796275,
+            "unit": "ns",
+            "range": "± 1572.2282361045548",
+            "allocated": 6440
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRowNumberBenchmarks.Quarry_RowNumber",
+            "value": 199689.01398577009,
+            "unit": "ns",
+            "range": "± 1470.5581918892565",
+            "allocated": 6448
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRunningSumBenchmarks.Quarry_RunningSum",
+            "value": 301177.7427133414,
+            "unit": "ns",
+            "range": "± 1795.1273936209452",
+            "allocated": 16048
+          },
+          {
+            "name": "Quarry.Benchmarks.Generator.GeneratorColdCompileBenchmarks.Quarry_GeneratorColdCompile",
+            "value": 270211032.71875,
+            "unit": "ns",
+            "range": "± 77172966.54028511",
+            "allocated": 16321968
+          },
+          {
+            "name": "Quarry.Benchmarks.Generator.GeneratorPipelineSplitBenchmarks.Quarry_Pipeline_SchemaOnly",
+            "value": 2728692.733125,
+            "unit": "ns",
+            "range": "± 1226625.6192343365",
+            "allocated": 320896
+          },
+          {
+            "name": "Quarry.Benchmarks.Generator.GeneratorPipelineSplitBenchmarks.Quarry_Pipeline_PlusQueries",
+            "value": 258167976.46666667,
+            "unit": "ns",
+            "range": "± 61099769.84435972",
+            "allocated": 16426760
+          },
+          {
+            "name": "Quarry.Benchmarks.Generator.GeneratorPipelineSplitBenchmarks.Quarry_Pipeline_PlusMigrations",
+            "value": 285854667.90816325,
+            "unit": "ns",
+            "range": "± 79641455.44922358",
+            "allocated": 16581272
+          },
+          {
+            "name": "Quarry.Benchmarks.Generator.GeneratorThroughputBenchmarks.Quarry_Throughput_Small",
+            "value": 70834960.09693877,
+            "unit": "ns",
+            "range": "± 20245317.146252334",
+            "allocated": 3567028
+          },
+          {
+            "name": "Quarry.Benchmarks.Generator.GeneratorThroughputBenchmarks.Quarry_Throughput_Medium",
+            "value": 268113913.13043478,
+            "unit": "ns",
+            "range": "± 73940400.03744496",
+            "allocated": 16337304
+          },
+          {
+            "name": "Quarry.Benchmarks.Generator.GeneratorThroughputBenchmarks.Quarry_Throughput_Large",
+            "value": 547853822.2727273,
+            "unit": "ns",
+            "range": "± 149305423.6711105",
+            "allocated": 45422664
           }
         ]
       }

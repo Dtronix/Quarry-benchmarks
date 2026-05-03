@@ -1,5 +1,11 @@
 [
   {
+    "sha": "bcb0ee84b354a4f28fc2ea46c60a8276c54cc37a",
+    "message": "Docs: fix HasOne<T>/HasManyThrough type-parameter examples to use Schema classes",
+    "date": "2026-05-03T17:40:04-04:00",
+    "file": "2026-05-03-bcb0ee84.html"
+  },
+  {
     "sha": "4e8579aadaf04bf113effcbd1bab98211d1fd221",
     "message": "Fix silent default(T) binding for captured vars in OrderBy/GroupBy/Join + add QRY037 (#293)",
     "date": "2026-04-30T18:17:54-04:00",

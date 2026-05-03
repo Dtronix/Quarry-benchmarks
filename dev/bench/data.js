@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777591026758,
+  "lastUpdate": 1777847919501,
   "repoUrl": "https://github.com/Dtronix/Quarry",
   "entries": {
     "Quarry Benchmarks": [
@@ -8652,6 +8652,357 @@ window.BENCHMARK_DATA = {
             "unit": "ns",
             "range": "± 183073828.12519997",
             "allocated": 45385104
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "DJGosnell",
+            "email": "djgosnell@gmail.com",
+            "username": "DJGosnell"
+          },
+          "committer": {
+            "name": "DJGosnell",
+            "email": "djgosnell@gmail.com",
+            "username": "DJGosnell"
+          },
+          "id": "bcb0ee84b354a4f28fc2ea46c60a8276c54cc37a",
+          "message": "Docs: fix HasOne<T>/HasManyThrough type-parameter examples to use Schema classes\n\nThe docs showed `One<User> => HasOne<User>()` and `HasManyThrough<Tag, OrderTag>()`\nusing generated entity-class names, but the runtime API constrains these type\nparameters to `where T : Schema`. Updates the concrete examples in querying.md,\nthe root llm.md, src/Quarry.Generator/README.md, and the v0.3.0 release notes\nto use `UserSchema`/`TagSchema`/`OrderTagSchema`. Also corrects the documented\n`HasManyThrough` signature, which has three type parameters and two lambda\nargs (the parameterless 2-arg form does not exist).",
+          "timestamp": "2026-05-03T21:40:04Z",
+          "url": "https://github.com/Dtronix/Quarry/commit/bcb0ee84b354a4f28fc2ea46c60a8276c54cc37a"
+        },
+        "date": 1777847919463,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateAvgBenchmarks.Quarry_Avg",
+            "value": 19353.5970589774,
+            "unit": "ns",
+            "range": "± 300.6042520974241",
+            "allocated": 960
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateCountBenchmarks.Quarry_Count",
+            "value": 8248.09837777274,
+            "unit": "ns",
+            "range": "± 96.7595415608426",
+            "allocated": 936
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.AggregateSumBenchmarks.Quarry_Sum",
+            "value": 18749.59831237793,
+            "unit": "ns",
+            "range": "± 63.35017574790704",
+            "allocated": 960
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ColdStartBenchmarks.Quarry_ColdStart",
+            "value": 191851.4678485577,
+            "unit": "ns",
+            "range": "± 1177.7203078502598",
+            "allocated": 27152
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexJoinFilterPaginateBenchmarks.Quarry_JoinFilterPaginate",
+            "value": 32695.342293875558,
+            "unit": "ns",
+            "range": "± 383.2160926851816",
+            "allocated": 2568
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ComplexMultiJoinAggregateBenchmarks.Quarry_MultiJoinAggregate",
+            "value": 53725.58341158353,
+            "unit": "ns",
+            "range": "± 264.59749778718594",
+            "allocated": 1096
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ConditionalBranchBenchmarks.Quarry_ConditionalQuery",
+            "value": 86423.82684795673,
+            "unit": "ns",
+            "range": "± 719.3641762342382",
+            "allocated": 8312
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteMultiBenchmarks.Quarry_MultiCte",
+            "value": 110713.11556570871,
+            "unit": "ns",
+            "range": "± 558.26741627011",
+            "allocated": 8752
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteProjectionBenchmarks.Quarry_CteProjection",
+            "value": 106027.41978102464,
+            "unit": "ns",
+            "range": "± 541.2458078420249",
+            "allocated": 8624
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.CteSimpleBenchmarks.Quarry_SimpleCte",
+            "value": 106036.89988490513,
+            "unit": "ns",
+            "range": "± 936.9928359888848",
+            "allocated": 8632
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow_Inlined",
+            "value": 46794.28571428572,
+            "unit": "ns",
+            "range": "± 583.6246724066403",
+            "allocated": 552
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.DeleteBenchmarks.Quarry_DeleteSingleRow",
+            "value": 51035.142857142855,
+            "unit": "ns",
+            "range": "± 575.881913261719",
+            "allocated": 856
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereActiveBenchmarks.Quarry_WhereActive",
+            "value": 185188.10529972956,
+            "unit": "ns",
+            "range": "± 760.7702588080879",
+            "allocated": 27096
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById",
+            "value": 16081.628847394672,
+            "unit": "ns",
+            "range": "± 215.23826256496315",
+            "allocated": 1336
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereByIdBenchmarks.Quarry_WhereById_Parameterized",
+            "value": 17541.492381504602,
+            "unit": "ns",
+            "range": "± 138.7159128144119",
+            "allocated": 1664
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.FilterWhereCompoundBenchmarks.Quarry_WhereCompound",
+            "value": 80809.71181077223,
+            "unit": "ns",
+            "range": "± 414.41982285123595",
+            "allocated": 9008
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertBatchBenchmarks.Quarry_BatchInsert10",
+            "value": 122261.6,
+            "unit": "ns",
+            "range": "± 894.5705207900978",
+            "allocated": 15640
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.InsertSingleBenchmarks.Quarry_SingleInsert",
+            "value": 54642.25,
+            "unit": "ns",
+            "range": "± 442.6930241559761",
+            "allocated": 1592
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinInnerBenchmarks.Quarry_InnerJoin",
+            "value": 139053.17508370537,
+            "unit": "ns",
+            "range": "± 1240.405561788073",
+            "allocated": 14464
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.JoinThreeTableBenchmarks.Quarry_ThreeTableJoin",
+            "value": 383340.2643855168,
+            "unit": "ns",
+            "range": "± 2559.6655176344107",
+            "allocated": 47424
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationFirstPageBenchmarks.Quarry_FirstPage",
+            "value": 34727.09979248047,
+            "unit": "ns",
+            "range": "± 143.16370920957132",
+            "allocated": 3976
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.PaginationLimitOffsetBenchmarks.Quarry_LimitOffset",
+            "value": 35125.73828560965,
+            "unit": "ns",
+            "range": "± 359.5764264342652",
+            "allocated": 3984
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectAllBenchmarks.Quarry_SelectAll",
+            "value": 196546.91385591947,
+            "unit": "ns",
+            "range": "± 1073.474486179221",
+            "allocated": 29152
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SelectProjectionBenchmarks.Quarry_SelectProjection",
+            "value": 86812.69297438402,
+            "unit": "ns",
+            "range": "± 396.65952400172927",
+            "allocated": 10400
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetExceptBenchmarks.Quarry_Except",
+            "value": 89844.60512131911,
+            "unit": "ns",
+            "range": "± 482.7127363001745",
+            "allocated": 9112
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetIntersectBenchmarks.Quarry_Intersect",
+            "value": 119116.83211844308,
+            "unit": "ns",
+            "range": "± 638.8815524035314",
+            "allocated": 9048
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SetUnionAllBenchmarks.Quarry_UnionAll",
+            "value": 75929.71469552176,
+            "unit": "ns",
+            "range": "± 517.7427788637189",
+            "allocated": 9832
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringContainsBenchmarks.Quarry_Contains",
+            "value": 34399.42622258113,
+            "unit": "ns",
+            "range": "± 302.9470682860275",
+            "allocated": 2088
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.StringStartsWithBenchmarks.Quarry_StartsWith",
+            "value": 101069.4197126116,
+            "unit": "ns",
+            "range": "± 744.3070641189668",
+            "allocated": 10360
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryCountBenchmarks.Quarry_CountSubquery",
+            "value": 484294.57383510045,
+            "unit": "ns",
+            "range": "± 2579.1858721960457",
+            "allocated": 1120
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryExistsBenchmarks.Quarry_Exists",
+            "value": 323430.7457557091,
+            "unit": "ns",
+            "range": "± 1678.1842379903646",
+            "allocated": 10472
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubqueryFilteredExistsBenchmarks.Quarry_FilteredExists",
+            "value": 410575.45751953125,
+            "unit": "ns",
+            "range": "± 2661.5438628672778",
+            "allocated": 8632
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.SubquerySumBenchmarks.Quarry_SumSubquery",
+            "value": 489504.29815204325,
+            "unit": "ns",
+            "range": "± 1940.4284180755333",
+            "allocated": 1128
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.ThroughputBenchmarks.Quarry_Throughput",
+            "value": 19182752.375,
+            "unit": "ns",
+            "range": "± 100690.3704043993",
+            "allocated": 1923200
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow_Inlined",
+            "value": 41574.333333333336,
+            "unit": "ns",
+            "range": "± 359.0354080622471",
+            "allocated": 576
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.UpdateBenchmarks.Quarry_UpdateSingleRow",
+            "value": 45444.333333333336,
+            "unit": "ns",
+            "range": "± 524.8510322563975",
+            "allocated": 880
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowLagBenchmarks.Quarry_Lag",
+            "value": 362973.27302433894,
+            "unit": "ns",
+            "range": "± 1628.9699837368576",
+            "allocated": 16016
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRankBenchmarks.Quarry_Rank",
+            "value": 218404.90393066406,
+            "unit": "ns",
+            "range": "± 2686.343531817745",
+            "allocated": 6440
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRowNumberBenchmarks.Quarry_RowNumber",
+            "value": 199631.06215122767,
+            "unit": "ns",
+            "range": "± 1611.4389701426107",
+            "allocated": 6448
+          },
+          {
+            "name": "Quarry.Benchmarks.Benchmarks.WindowRunningSumBenchmarks.Quarry_RunningSum",
+            "value": 293660.73085239955,
+            "unit": "ns",
+            "range": "± 3022.9789365077727",
+            "allocated": 16048
+          },
+          {
+            "name": "Quarry.Benchmarks.Generator.GeneratorColdCompileBenchmarks.Quarry_GeneratorColdCompile",
+            "value": 279887442.7708333,
+            "unit": "ns",
+            "range": "± 87836494.12993348",
+            "allocated": 16310120
+          },
+          {
+            "name": "Quarry.Benchmarks.Generator.GeneratorPipelineSplitBenchmarks.Quarry_Pipeline_SchemaOnly",
+            "value": 3074530.7371875,
+            "unit": "ns",
+            "range": "± 1424941.5093728174",
+            "allocated": 318314
+          },
+          {
+            "name": "Quarry.Benchmarks.Generator.GeneratorPipelineSplitBenchmarks.Quarry_Pipeline_PlusMigrations",
+            "value": 270358279.0326087,
+            "unit": "ns",
+            "range": "± 62146822.93765562",
+            "allocated": 16586552
+          },
+          {
+            "name": "Quarry.Benchmarks.Generator.GeneratorPipelineSplitBenchmarks.Quarry_Pipeline_PlusQueries",
+            "value": 278806603.3814433,
+            "unit": "ns",
+            "range": "± 76287589.46774243",
+            "allocated": 16332160
+          },
+          {
+            "name": "Quarry.Benchmarks.Generator.GeneratorThroughputBenchmarks.Quarry_Throughput_Small",
+            "value": 65695119.92368421,
+            "unit": "ns",
+            "range": "± 19868327.957227066",
+            "allocated": 3569992
+          },
+          {
+            "name": "Quarry.Benchmarks.Generator.GeneratorThroughputBenchmarks.Quarry_Throughput_Medium",
+            "value": 265590326.2736842,
+            "unit": "ns",
+            "range": "± 69781345.41873096",
+            "allocated": 16335736
+          },
+          {
+            "name": "Quarry.Benchmarks.Generator.GeneratorThroughputBenchmarks.Quarry_Throughput_Large",
+            "value": 607020925.38,
+            "unit": "ns",
+            "range": "± 200830915.52589163",
+            "allocated": 45383728
           }
         ]
       }

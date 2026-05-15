@@ -1,5 +1,11 @@
 [
   {
+    "sha": "d1122ff05f3ef65bf5bb7471718ec4098e15ebe9",
+    "message": "Add SqlOutput coverage: 5/6-table mixed joins, conditional masks, nested subqueries, streaming, multi-context (#295)",
+    "date": "2026-05-15T17:06:02-04:00",
+    "file": "2026-05-15-d1122ff0.html"
+  },
+  {
     "sha": "bcb0ee84b354a4f28fc2ea46c60a8276c54cc37a",
     "message": "Docs: fix HasOne<T>/HasManyThrough type-parameter examples to use Schema classes",
     "date": "2026-05-03T17:40:04-04:00",

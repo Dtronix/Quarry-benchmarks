@@ -1,5 +1,11 @@
 [
   {
+    "sha": "08d832354d80fce5f79a09e7810ea1f9602421e3",
+    "message": "Benchmarks: expand EF DTO initializers to multi-line for visual parity with Quarry",
+    "date": "2026-05-18T16:40:06-04:00",
+    "file": "2026-05-18-08d83235.html"
+  },
+  {
     "sha": "62c3a81ddfd1e0400051254d18dbba9901067d12",
     "message": "Benchmarks: drop CommandBehavior.SequentialAccess from Raw baselines",
     "date": "2026-05-18T14:23:21-04:00",

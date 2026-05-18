@@ -1,5 +1,11 @@
 [
   {
+    "sha": "62c3a81ddfd1e0400051254d18dbba9901067d12",
+    "message": "Benchmarks: drop CommandBehavior.SequentialAccess from Raw baselines",
+    "date": "2026-05-18T14:23:21-04:00",
+    "file": "2026-05-18-62c3a81d.html"
+  },
+  {
     "sha": "d1122ff05f3ef65bf5bb7471718ec4098e15ebe9",
     "message": "Add SqlOutput coverage: 5/6-table mixed joins, conditional masks, nested subqueries, streaming, multi-context (#295)",
     "date": "2026-05-15T17:06:02-04:00",

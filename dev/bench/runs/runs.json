@@ -1,5 +1,11 @@
 [
   {
+    "sha": "62256789ed45dc8f00822decdd0dff2960175fa4",
+    "message": "Benchmark suite migration: decimal -> double + generator aggregate-type fix (#297)",
+    "date": "2026-05-21T16:59:59-04:00",
+    "file": "2026-05-21-62256789.html"
+  },
+  {
     "sha": "08d832354d80fce5f79a09e7810ea1f9602421e3",
     "message": "Benchmarks: expand EF DTO initializers to multi-line for visual parity with Quarry",
     "date": "2026-05-18T16:40:06-04:00",

@@ -1,5 +1,11 @@
 [
   {
+    "sha": "b758e837b65f585957912f9facb69b2b4a8e93c8",
+    "message": "Fix nested int-aggregate projection type resolution (#294) (#298)",
+    "date": "2026-05-22T09:38:25-04:00",
+    "file": "2026-05-22-b758e837.html"
+  },
+  {
     "sha": "62256789ed45dc8f00822decdd0dff2960175fa4",
     "message": "Benchmark suite migration: decimal -> double + generator aggregate-type fix (#297)",
     "date": "2026-05-21T16:59:59-04:00",

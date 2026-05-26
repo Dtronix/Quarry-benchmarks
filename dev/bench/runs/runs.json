@@ -1,5 +1,11 @@
 [
   {
+    "sha": "b4920afbbd0cf514c253ad239e17a7b881a16600",
+    "message": "Add PatchUpdateBenchmarks: variable-column UPDATE comparison (#302)",
+    "date": "2026-05-26T18:31:10-04:00",
+    "file": "2026-05-26-b4920afb.html"
+  },
+  {
     "sha": "8797127f26fcc01137d3e471a9c05270595d6e87",
     "message": "Add Patch partial-update API (Update().Set(T.Patch) / Set(ref-lambda)) (#301)",
     "date": "2026-05-26T12:06:47-04:00",

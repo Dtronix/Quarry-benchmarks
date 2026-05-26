@@ -1,5 +1,11 @@
 [
   {
+    "sha": "8797127f26fcc01137d3e471a9c05270595d6e87",
+    "message": "Add Patch partial-update API (Update().Set(T.Patch) / Set(ref-lambda)) (#301)",
+    "date": "2026-05-26T12:06:47-04:00",
+    "file": "2026-05-26-8797127f.html"
+  },
+  {
     "sha": "b758e837b65f585957912f9facb69b2b4a8e93c8",
     "message": "Fix nested int-aggregate projection type resolution (#294) (#298)",
     "date": "2026-05-22T09:38:25-04:00",

@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quarry Benchmark Report</title>
+<style>
+:root {
+  --bg: #f5f5f5;
+  --text: #24292e;
+  --text-muted: #586069;
+  --card-bg: #ffffff;
+  --border: #e1e4e8;
+  --row-border: #f0f0f0;
+  --link: #0366d6;
+  --link-hover-bg: #f1f8ff;
+  --table-header-bg: #f6f8fa;
+  --row-hover: #f6f8fa;
+  --quarry-bg: #fffbdd;
+  --quarry-bg-hover: #fff8c5;
+  --shadow: rgba(0,0,0,0.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --card-bg: #161b22;
+    --border: #30363d;
+    --row-border: #21262d;
+    --link: #58a6ff;
+    --link-hover-bg: #1c2129;
+    --table-header-bg: #1c2129;
+    --row-hover: #1c2129;
+    --quarry-bg: #3a3318;
+    --quarry-bg-hover: #4a4318;
+    --shadow: rgba(0,0,0,0.5);
+  }
+}
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; color: var(--text); background: var(--bg); }
+header { background: var(--card-bg); padding: 1.25rem 2rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+header h1 { margin: 0 0 0.4rem; font-size: 1.4rem; }
+header .commit { font-family: monospace; font-size: 0.9rem; }
+header .commit a { color: var(--link); text-decoration: none; }
+header .commit a:hover { text-decoration: underline; }
+header .meta { color: var(--text-muted); font-size: 0.8rem; margin-top: 0.4rem; }
+header nav { margin-top: 0.6rem; }
+header nav a { color: var(--link); text-decoration: none; margin-right: 1.25rem; font-size: 0.9rem; }
+header nav a:hover { text-decoration: underline; }
+.layout { display: grid; grid-template-columns: 260px 1fr; gap: 0; }
+.sidebar { background: var(--card-bg); border-right: 1px solid var(--border); padding: 1rem; height: calc(100vh - 140px); overflow-y: auto; position: sticky; top: 140px; }
+.sidebar h2 { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin: 0 0 0.5rem; letter-spacing: 0.5px; }
+.sidebar ul { list-style: none; padding: 0; margin: 0; }
+.sidebar li { margin-bottom: 0.15rem; }
+.sidebar a { text-decoration: none; color: var(--link); font-size: 0.85rem; display: block; padding: 0.3rem 0.5rem; border-radius: 3px; font-family: monospace; }
+.sidebar a:hover { background: var(--link-hover-bg); }
+main { padding: 1.5rem 2rem; min-width: 0; }
+section { background: var(--card-bg); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; border-radius: 6px; box-shadow: 0 1px 3px var(--shadow); scroll-margin-top: 150px; }
+section h2 { margin: 0 0 1rem; font-family: monospace; font-size: 1.05rem; color: var(--text); }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed; }
+th, td { padding: 0.5rem 0.75rem; text-align: right; border-bottom: 1px solid var(--row-border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+th { background: var(--table-header-bg); font-weight: 600; text-align: right; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.3px; }
+th:first-child, td:first-child { text-align: left; font-family: monospace; }
+tr.quarry { background: var(--quarry-bg); }
+tr.quarry:hover { background: var(--quarry-bg-hover); }
+tr:hover:not(.quarry) { background: var(--row-hover); }
+.numeric { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body><header>
+<h1>Quarry Benchmark Report</h1>
+<div class="commit"><a href="https://github.com/Dtronix/Quarry/commit/c149cfbc7c71c75a4523f21060b0f034fd1aa3b7" target="_blank" rel="noopener">c149cfbc</a> — Split llm.md: root = usage, generator = internals</div>
+<div class="meta">Linux Debian GNU/Linux 13 (trixie) &middot; QEMU Virtual CPU version 2.5+ &middot; .NET 10.0.9 (10.0.9, 10.0.926.27113) &middot; 2026-06-10T10:33:28-04:00</div>
+<nav><a href="../../../">Home</a><a href="../">Dashboard</a><a href="./">Run History</a><a href="https://github.com/Dtronix/Quarry" target="_blank" rel="noopener">Source</a></nav>
+</header>
+<div class="layout">
+<aside class="sidebar">
+<h2>Benchmark Classes</h2>
+<ul>
+<li><a href="#aggregateavgbenchmarks">AggregateAvgBenchmarks</a></li>
+<li><a href="#aggregatecountbenchmarks">AggregateCountBenchmarks</a></li>
+<li><a href="#aggregatesumbenchmarks">AggregateSumBenchmarks</a></li>
+<li><a href="#coldstartbenchmarks">ColdStartBenchmarks</a></li>
+<li><a href="#complexjoinfilterpaginatebenchmarks">ComplexJoinFilterPaginateBenchmarks</a></li>
+<li><a href="#complexmultijoinaggregatebenchmarks">ComplexMultiJoinAggregateBenchmarks</a></li>
+<li><a href="#conditionalbranchbenchmarks">ConditionalBranchBenchmarks</a></li>
+<li><a href="#ctemultibenchmarks">CteMultiBenchmarks</a></li>
+<li><a href="#cteprojectionbenchmarks">CteProjectionBenchmarks</a></li>
+<li><a href="#ctesimplebenchmarks">CteSimpleBenchmarks</a></li>
+<li><a href="#deletebenchmarks">DeleteBenchmarks</a></li>
+<li><a href="#enumerableoverheadbenchmarks">EnumerableOverheadBenchmarks</a></li>
+<li><a href="#filterwhereactivebenchmarks">FilterWhereActiveBenchmarks</a></li>
+<li><a href="#filterwherebyidbenchmarks">FilterWhereByIdBenchmarks</a></li>
+<li><a href="#filterwherecompoundbenchmarks">FilterWhereCompoundBenchmarks</a></li>
+<li><a href="#generatorcoldcompilebenchmarks">GeneratorColdCompileBenchmarks</a></li>
+<li><a href="#generatorpipelinesplitbenchmarks">GeneratorPipelineSplitBenchmarks</a></li>
+<li><a href="#generatorthroughputbenchmarks">GeneratorThroughputBenchmarks</a></li>
+<li><a href="#insertbatchbenchmarks">InsertBatchBenchmarks</a></li>
+<li><a href="#insertsinglebenchmarks">InsertSingleBenchmarks</a></li>
+<li><a href="#joininnerbenchmarks">JoinInnerBenchmarks</a></li>
+<li><a href="#jointhreetablebenchmarks">JoinThreeTableBenchmarks</a></li>
+<li><a href="#paginationfirstpagebenchmarks">PaginationFirstPageBenchmarks</a></li>
+<li><a href="#paginationlimitoffsetbenchmarks">PaginationLimitOffsetBenchmarks</a></li>
+<li><a href="#patchupdatebenchmarks">PatchUpdateBenchmarks</a></li>
+<li><a href="#selectallbenchmarks">SelectAllBenchmarks</a></li>
+<li><a href="#selectprojectionbenchmarks">SelectProjectionBenchmarks</a></li>
+<li><a href="#setexceptbenchmarks">SetExceptBenchmarks</a></li>
+<li><a href="#setintersectbenchmarks">SetIntersectBenchmarks</a></li>
+<li><a href="#setunionallbenchmarks">SetUnionAllBenchmarks</a></li>
+<li><a href="#stringcontainsbenchmarks">StringContainsBenchmarks</a></li>
+<li><a href="#stringstartswithbenchmarks">StringStartsWithBenchmarks</a></li>
+<li><a href="#subquerycountbenchmarks">SubqueryCountBenchmarks</a></li>
+<li><a href="#subqueryexistsbenchmarks">SubqueryExistsBenchmarks</a></li>
+<li><a href="#subqueryfilteredexistsbenchmarks">SubqueryFilteredExistsBenchmarks</a></li>
+<li><a href="#subquerysumbenchmarks">SubquerySumBenchmarks</a></li>
+<li><a href="#throughputbenchmarks">ThroughputBenchmarks</a></li>
+<li><a href="#updatebenchmarks">UpdateBenchmarks</a></li>
+<li><a href="#windowlagbenchmarks">WindowLagBenchmarks</a></li>
+<li><a href="#windowrankbenchmarks">WindowRankBenchmarks</a></li>
+<li><a href="#windowrownumberbenchmarks">WindowRowNumberBenchmarks</a></li>
+<li><a href="#windowrunningsumbenchmarks">WindowRunningSumBenchmarks</a></li>
+</ul>
+</aside>
+<main>
+<section id="aggregateavgbenchmarks">
+<h2>AggregateAvgBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Dapper_Avg">Dapper_Avg</td><td class="numeric">18.170 us</td><td class="numeric">32.548 ns</td><td class="numeric">59.875 ns</td><td class="numeric">18.157 us</td><td class="numeric">936 B</td><td class="numeric">3.000</td></tr>
+<tr class="quarry"><td title="Quarry_Avg">Quarry_Avg</td><td class="numeric">18.517 us</td><td class="numeric">112.299 ns</td><td class="numeric">214.379 ns</td><td class="numeric">18.423 us</td><td class="numeric">944 B</td><td class="numeric">3.000</td></tr>
+<tr><td title="Raw_Avg">Raw_Avg</td><td class="numeric">19.251 us</td><td class="numeric">70.860 ns</td><td class="numeric">130.351 ns</td><td class="numeric">19.272 us</td><td class="numeric">864 B</td><td class="numeric">3.000</td></tr>
+<tr><td title="SqlKata_Avg">SqlKata_Avg</td><td class="numeric">36.776 us</td><td class="numeric">186.481 ns</td><td class="numeric">343.045 ns</td><td class="numeric">36.798 us</td><td class="numeric">12.93 KB</td><td class="numeric">12.000</td></tr>
+<tr><td title="EfCore_Avg">EfCore_Avg</td><td class="numeric">63.598 us</td><td class="numeric">360.595 ns</td><td class="numeric">663.338 ns</td><td class="numeric">63.498 us</td><td class="numeric">6.46 KB</td><td class="numeric">3.000</td></tr>
+</tbody></table>
+</section>
+<section id="aggregatecountbenchmarks">
+<h2>AggregateCountBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr class="quarry"><td title="Quarry_Count">Quarry_Count</td><td class="numeric">7.937 us</td><td class="numeric">40.644 ns</td><td class="numeric">77.590 ns</td><td class="numeric">7.919 us</td><td class="numeric">936 B</td><td class="numeric">7.000</td></tr>
+<tr><td title="Raw_Count">Raw_Count</td><td class="numeric">7.974 us</td><td class="numeric">52.080 ns</td><td class="numeric">99.421 ns</td><td class="numeric">7.950 us</td><td class="numeric">864 B</td><td class="numeric">6.000</td></tr>
+<tr><td title="Dapper_Count">Dapper_Count</td><td class="numeric">8.540 us</td><td class="numeric">58.375 ns</td><td class="numeric">111.439 ns</td><td class="numeric">8.518 us</td><td class="numeric">936 B</td><td class="numeric">7.000</td></tr>
+<tr><td title="SqlKata_Count">SqlKata_Count</td><td class="numeric">24.655 us</td><td class="numeric">161.098 ns</td><td class="numeric">318.331 ns</td><td class="numeric">24.546 us</td><td class="numeric">12.91 KB</td><td class="numeric">12.000</td></tr>
+<tr><td title="EfCore_Count">EfCore_Count</td><td class="numeric">37.555 us</td><td class="numeric">351.152 ns</td><td class="numeric">1.013 us</td><td class="numeric">37.077 us</td><td class="numeric">5.52 KB</td><td class="numeric">2.000</td></tr>
+</tbody></table>
+</section>
+<section id="aggregatesumbenchmarks">
+<h2>AggregateSumBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr class="quarry"><td title="Quarry_Sum">Quarry_Sum</td><td class="numeric">18.374 us</td><td class="numeric">100.693 ns</td><td class="numeric">185.231 ns</td><td class="numeric">18.319 us</td><td class="numeric">944 B</td><td class="numeric">3.000</td></tr>
+<tr><td title="Dapper_Sum">Dapper_Sum</td><td class="numeric">18.678 us</td><td class="numeric">67.701 ns</td><td class="numeric">124.540 ns</td><td class="numeric">18.682 us</td><td class="numeric">936 B</td><td class="numeric">3.000</td></tr>
+<tr><td title="Raw_Sum">Raw_Sum</td><td class="numeric">18.877 us</td><td class="numeric">95.675 ns</td><td class="numeric">182.645 ns</td><td class="numeric">18.799 us</td><td class="numeric">864 B</td><td class="numeric">3.000</td></tr>
+<tr><td title="SqlKata_Sum">SqlKata_Sum</td><td class="numeric">37.347 us</td><td class="numeric">214.589 ns</td><td class="numeric">409.653 ns</td><td class="numeric">37.269 us</td><td class="numeric">12.93 KB</td><td class="numeric">12.000</td></tr>
+<tr><td title="EfCore_Sum">EfCore_Sum</td><td class="numeric">64.197 us</td><td class="numeric">433.199 ns</td><td class="numeric">796.898 ns</td><td class="numeric">63.885 us</td><td class="numeric">6.48 KB</td><td class="numeric">3.000</td></tr>
+</tbody></table>
+</section>
+<section id="coldstartbenchmarks">
+<h2>ColdStartBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_ColdStart">Raw_ColdStart</td><td class="numeric">188.208 us</td><td class="numeric">479.725 ns</td><td class="numeric">915.800 ns</td><td class="numeric">187.960 us</td><td class="numeric">22.79 KB</td><td class="numeric">11.000</td></tr>
+<tr class="quarry"><td title="Quarry_ColdStart">Quarry_ColdStart</td><td class="numeric">188.479 us</td><td class="numeric">690.876 ns</td><td class="numeric">1.271 us</td><td class="numeric">188.316 us</td><td class="numeric">26.52 KB</td><td class="numeric">13.000</td></tr>
+<tr><td title="SqlKata_ColdStart">SqlKata_ColdStart</td><td class="numeric">222.764 us</td><td class="numeric">2.058 us</td><td class="numeric">3.930 us</td><td class="numeric">222.277 us</td><td class="numeric">40.28 KB</td><td class="numeric">5.000</td></tr>
+<tr><td title="Dapper_ColdStart">Dapper_ColdStart</td><td class="numeric">229.067 us</td><td class="numeric">553.738 ns</td><td class="numeric">1.057 us</td><td class="numeric">229.164 us</td><td class="numeric">29.93 KB</td><td class="numeric">15.000</td></tr>
+<tr><td title="EfCore_ColdStart">EfCore_ColdStart</td><td class="numeric">415.394 us</td><td class="numeric">4.462 us</td><td class="numeric">13.468 us</td><td class="numeric">410.186 us</td><td class="numeric">98.59 KB</td><td class="numeric">6.000</td></tr>
+</tbody></table>
+</section>
+<section id="complexjoinfilterpaginatebenchmarks">
+<h2>ComplexJoinFilterPaginateBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_JoinFilterPaginate">Raw_JoinFilterPaginate</td><td class="numeric">25.125 us</td><td class="numeric">71.545 ns</td><td class="numeric">136.581 ns</td><td class="numeric">25.093 us</td><td class="numeric">1.94 KB</td><td class="numeric">7.000</td></tr>
+<tr class="quarry"><td title="Quarry_JoinFilterPaginate">Quarry_JoinFilterPaginate</td><td class="numeric">26.547 us</td><td class="numeric">111.137 ns</td><td class="numeric">212.162 ns</td><td class="numeric">26.480 us</td><td class="numeric">2.12 KB</td><td class="numeric">8.000</td></tr>
+<tr><td title="Dapper_JoinFilterPaginate">Dapper_JoinFilterPaginate</td><td class="numeric">30.461 us</td><td class="numeric">96.589 ns</td><td class="numeric">184.390 ns</td><td class="numeric">30.457 us</td><td class="numeric">2.55 KB</td><td class="numeric">10.000</td></tr>
+<tr><td title="SqlKata_JoinFilterPaginate">SqlKata_JoinFilterPaginate</td><td class="numeric">78.062 us</td><td class="numeric">443.186 ns</td><td class="numeric">846.046 ns</td><td class="numeric">78.069 us</td><td class="numeric">27.55 KB</td><td class="numeric">13.000</td></tr>
+<tr><td title="EfCore_JoinFilterPaginate">EfCore_JoinFilterPaginate</td><td class="numeric">125.920 us</td><td class="numeric">1.034 us</td><td class="numeric">1.974 us</td><td class="numeric">124.941 us</td><td class="numeric">17.94 KB</td><td class="numeric">4.000</td></tr>
+</tbody></table>
+</section>
+<section id="complexmultijoinaggregatebenchmarks">
+<h2>ComplexMultiJoinAggregateBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr class="quarry"><td title="Quarry_MultiJoinAggregate">Quarry_MultiJoinAggregate</td><td class="numeric">53.663 us</td><td class="numeric">164.426 ns</td><td class="numeric">290.606 ns</td><td class="numeric">53.636 us</td><td class="numeric">1.07 KB</td><td class="numeric">2.000</td></tr>
+<tr><td title="Raw_MultiJoinAggregate">Raw_MultiJoinAggregate</td><td class="numeric">53.854 us</td><td class="numeric">237.391 ns</td><td class="numeric">436.696 ns</td><td class="numeric">53.794 us</td><td class="numeric">984 B</td><td class="numeric">1.000</td></tr>
+<tr><td title="Dapper_MultiJoinAggregate">Dapper_MultiJoinAggregate</td><td class="numeric">53.982 us</td><td class="numeric">164.067 ns</td><td class="numeric">301.812 ns</td><td class="numeric">53.943 us</td><td class="numeric">1.03 KB</td><td class="numeric">2.000</td></tr>
+<tr><td title="SqlKata_MultiJoinAggregate">SqlKata_MultiJoinAggregate</td><td class="numeric">88.029 us</td><td class="numeric">357.564 ns</td><td class="numeric">682.593 ns</td><td class="numeric">87.863 us</td><td class="numeric">25.97 KB</td><td class="numeric">13.000</td></tr>
+<tr><td title="EfCore_MultiJoinAggregate">EfCore_MultiJoinAggregate</td><td class="numeric">135.730 us</td><td class="numeric">693.038 ns</td><td class="numeric">1.275 us</td><td class="numeric">135.264 us</td><td class="numeric">15.27 KB</td><td class="numeric">3.000</td></tr>
+</tbody></table>
+</section>
+<section id="conditionalbranchbenchmarks">
+<h2>ConditionalBranchBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_ConditionalQuery">Raw_ConditionalQuery</td><td class="numeric">85.483 us</td><td class="numeric">322.987 ns</td><td class="numeric">594.156 ns</td><td class="numeric">85.342 us</td><td class="numeric">7.68 KB</td><td class="numeric">7.000</td></tr>
+<tr class="quarry"><td title="Quarry_ConditionalQuery">Quarry_ConditionalQuery</td><td class="numeric">86.928 us</td><td class="numeric">257.669 ns</td><td class="numeric">474.000 ns</td><td class="numeric">86.905 us</td><td class="numeric">8.12 KB</td><td class="numeric">8.000</td></tr>
+<tr><td title="Dapper_ConditionalQuery">Dapper_ConditionalQuery</td><td class="numeric">100.687 us</td><td class="numeric">302.191 ns</td><td class="numeric">576.885 ns</td><td class="numeric">100.786 us</td><td class="numeric">10.25 KB</td><td class="numeric">10.000</td></tr>
+<tr><td title="SqlKata_ConditionalQuery">SqlKata_ConditionalQuery</td><td class="numeric">132.771 us</td><td class="numeric">1.009 us</td><td class="numeric">1.926 us</td><td class="numeric">132.032 us</td><td class="numeric">26.84 KB</td><td class="numeric">6.000</td></tr>
+<tr><td title="EfCore_ConditionalQuery">EfCore_ConditionalQuery</td><td class="numeric">174.211 us</td><td class="numeric">1.353 us</td><td class="numeric">2.488 us</td><td class="numeric">174.141 us</td><td class="numeric">22.24 KB</td><td class="numeric">2.000</td></tr>
+</tbody></table>
+</section>
+<section id="ctemultibenchmarks">
+<h2>CteMultiBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr class="quarry"><td title="Quarry_MultiCte">Quarry_MultiCte</td><td class="numeric">66.243 us</td><td class="numeric">329.372 ns</td><td class="numeric">628.775 ns</td><td class="numeric">65.986 us</td><td class="numeric">5.66 KB</td><td class="numeric">5.000</td></tr>
+<tr><td title="Raw_MultiCte">Raw_MultiCte</td><td class="numeric">66.603 us</td><td class="numeric">223.726 ns</td><td class="numeric">411.559 ns</td><td class="numeric">66.566 us</td><td class="numeric">5.52 KB</td><td class="numeric">5.000</td></tr>
+<tr><td title="SqlKata_MultiCte_RawFallback">SqlKata_MultiCte_RawFallback</td><td class="numeric">66.975 us</td><td class="numeric">133.717 ns</td><td class="numeric">236.331 ns</td><td class="numeric">67.006 us</td><td class="numeric">5.52 KB</td><td class="numeric">5.000</td></tr>
+<tr><td title="Dapper_MultiCte">Dapper_MultiCte</td><td class="numeric">88.100 us</td><td class="numeric">288.326 ns</td><td class="numeric">550.416 ns</td><td class="numeric">88.113 us</td><td class="numeric">9.36 KB</td><td class="numeric">9.000</td></tr>
+<tr><td title="EfCore_MultiCte_RawFallback">EfCore_MultiCte_RawFallback</td><td class="numeric">121.838 us</td><td class="numeric">580.534 ns</td><td class="numeric">1.068 us</td><td class="numeric">121.778 us</td><td class="numeric">29.00 KB</td><td class="numeric">7.000</td></tr>
+</tbody></table>
+</section>
+<section id="cteprojectionbenchmarks">
+<h2>CteProjectionBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr class="quarry"><td title="Quarry_CteProjection">Quarry_CteProjection</td><td class="numeric">63.040 us</td><td class="numeric">329.702 ns</td><td class="numeric">629.404 ns</td><td class="numeric">62.814 us</td><td class="numeric">5.53 KB</td><td class="numeric">5.000</td></tr>
+<tr><td title="Raw_CteProjection">Raw_CteProjection</td><td class="numeric">63.478 us</td><td class="numeric">283.960 ns</td><td class="numeric">542.082 ns</td><td class="numeric">63.346 us</td><td class="numeric">5.36 KB</td><td class="numeric">5.000</td></tr>
+<tr><td title="SqlKata_CteProjection_RawFallback">SqlKata_CteProjection_RawFallback</td><td class="numeric">64.552 us</td><td class="numeric">232.781 ns</td><td class="numeric">428.217 ns</td><td class="numeric">64.350 us</td><td class="numeric">5.36 KB</td><td class="numeric">5.000</td></tr>
+<tr><td title="Dapper_CteProjection">Dapper_CteProjection</td><td class="numeric">80.651 us</td><td class="numeric">380.914 ns</td><td class="numeric">727.168 ns</td><td class="numeric">80.391 us</td><td class="numeric">9.20 KB</td><td class="numeric">9.000</td></tr>
+<tr><td title="EfCore_CteProjection_RawFallback">EfCore_CteProjection_RawFallback</td><td class="numeric">114.661 us</td><td class="numeric">965.010 ns</td><td class="numeric">1.775 us</td><td class="numeric">114.094 us</td><td class="numeric">27.45 KB</td><td class="numeric">6.000</td></tr>
+</tbody></table>
+</section>
+<section id="ctesimplebenchmarks">
+<h2>CteSimpleBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_SimpleCte">Raw_SimpleCte</td><td class="numeric">63.853 us</td><td class="numeric">323.881 ns</td><td class="numeric">595.801 ns</td><td class="numeric">63.774 us</td><td class="numeric">5.38 KB</td><td class="numeric">5.000</td></tr>
+<tr class="quarry"><td title="Quarry_SimpleCte">Quarry_SimpleCte</td><td class="numeric">64.353 us</td><td class="numeric">174.700 ns</td><td class="numeric">308.764 ns</td><td class="numeric">64.395 us</td><td class="numeric">5.54 KB</td><td class="numeric">5.000</td></tr>
+<tr><td title="SqlKata_SimpleCte_RawFallback">SqlKata_SimpleCte_RawFallback</td><td class="numeric">64.488 us</td><td class="numeric">256.337 ns</td><td class="numeric">489.351 ns</td><td class="numeric">64.403 us</td><td class="numeric">5.38 KB</td><td class="numeric">5.000</td></tr>
+<tr><td title="Dapper_SimpleCte">Dapper_SimpleCte</td><td class="numeric">84.034 us</td><td class="numeric">226.991 ns</td><td class="numeric">433.328 ns</td><td class="numeric">83.952 us</td><td class="numeric">9.23 KB</td><td class="numeric">9.000</td></tr>
+<tr><td title="EfCore_SimpleCte_RawFallback">EfCore_SimpleCte_RawFallback</td><td class="numeric">116.465 us</td><td class="numeric">946.833 ns</td><td class="numeric">1.808 us</td><td class="numeric">115.655 us</td><td class="numeric">27.48 KB</td><td class="numeric">6.000</td></tr>
+</tbody></table>
+</section>
+<section id="deletebenchmarks">
+<h2>DeleteBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr class="quarry"><td title="Quarry_DeleteSingleRow_Inlined">Quarry_DeleteSingleRow_Inlined</td><td class="numeric">44.397 us</td><td class="numeric">338.910 ns</td><td class="numeric">598.990 ns</td><td class="numeric">44.577 us</td><td class="numeric">552 B</td><td class="numeric">-</td></tr>
+<tr><td title="Raw_DeleteSingleRow">Raw_DeleteSingleRow</td><td class="numeric">46.554 us</td><td class="numeric">409.114 ns</td><td class="numeric">723.067 ns</td><td class="numeric">46.627 us</td><td class="numeric">816 B</td><td class="numeric">-</td></tr>
+<tr class="quarry"><td title="Quarry_DeleteSingleRow">Quarry_DeleteSingleRow</td><td class="numeric">48.389 us</td><td class="numeric">103.404 ns</td><td class="numeric">182.756 ns</td><td class="numeric">48.405 us</td><td class="numeric">856 B</td><td class="numeric">-</td></tr>
+<tr><td title="Dapper_DeleteSingleRow">Dapper_DeleteSingleRow</td><td class="numeric">54.146 us</td><td class="numeric">351.595 ns</td><td class="numeric">717.541 ns</td><td class="numeric">54.302 us</td><td class="numeric">1.12 KB</td><td class="numeric">-</td></tr>
+<tr><td title="SqlKata_DeleteSingleRow">SqlKata_DeleteSingleRow</td><td class="numeric">111.279 us</td><td class="numeric">3.067 us</td><td class="numeric">15.571 us</td><td class="numeric">106.591 us</td><td class="numeric">8.60 KB</td><td class="numeric">-</td></tr>
+<tr><td title="EfCore_DeleteSingleRow">EfCore_DeleteSingleRow</td><td class="numeric">933.708 us</td><td class="numeric">30.860 us</td><td class="numeric">155.865 us</td><td class="numeric">870.818 us</td><td class="numeric">62.41 KB</td><td class="numeric">-</td></tr>
+</tbody></table>
+</section>
+<section id="enumerableoverheadbenchmarks">
+<h2>EnumerableOverheadBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Buffered_Direct">Buffered_Direct</td><td class="numeric">195.366 us</td><td class="numeric">951.377 ns</td><td class="numeric">1.816 us</td><td class="numeric">194.917 us</td><td class="numeric">24.41 KB</td><td class="numeric">12.000</td></tr>
+<tr><td title="AsyncEnumerable_ToListAsync">AsyncEnumerable_ToListAsync</td><td class="numeric">202.445 us</td><td class="numeric">453.752 ns</td><td class="numeric">834.706 ns</td><td class="numeric">202.187 us</td><td class="numeric">24.58 KB</td><td class="numeric">12.000</td></tr>
+<tr><td title="AsyncEnumerable_AwaitForeach">AsyncEnumerable_AwaitForeach</td><td class="numeric">202.729 us</td><td class="numeric">852.802 ns</td><td class="numeric">1.628 us</td><td class="numeric">202.442 us</td><td class="numeric">24.58 KB</td><td class="numeric">12.000</td></tr>
+</tbody></table>
+</section>
+<section id="filterwhereactivebenchmarks">
+<h2>FilterWhereActiveBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_WhereActive">Raw_WhereActive</td><td class="numeric">185.820 us</td><td class="numeric">701.040 ns</td><td class="numeric">1.338 us</td><td class="numeric">185.292 us</td><td class="numeric">22.79 KB</td><td class="numeric">11.000</td></tr>
+<tr class="quarry"><td title="Quarry_WhereActive">Quarry_WhereActive</td><td class="numeric">188.236 us</td><td class="numeric">678.162 ns</td><td class="numeric">1.295 us</td><td class="numeric">187.764 us</td><td class="numeric">26.46 KB</td><td class="numeric">13.000</td></tr>
+<tr><td title="SqlKata_WhereActive">SqlKata_WhereActive</td><td class="numeric">207.771 us</td><td class="numeric">1.455 us</td><td class="numeric">2.677 us</td><td class="numeric">207.208 us</td><td class="numeric">36.63 KB</td><td class="numeric">4.000</td></tr>
+<tr><td title="Dapper_WhereActive">Dapper_WhereActive</td><td class="numeric">226.719 us</td><td class="numeric">437.655 ns</td><td class="numeric">835.488 ns</td><td class="numeric">226.660 us</td><td class="numeric">29.93 KB</td><td class="numeric">15.000</td></tr>
+<tr><td title="EfCore_WhereActive">EfCore_WhereActive</td><td class="numeric">262.497 us</td><td class="numeric">2.060 us</td><td class="numeric">3.789 us</td><td class="numeric">261.809 us</td><td class="numeric">48.71 KB</td><td class="numeric">6.000</td></tr>
+</tbody></table>
+</section>
+<section id="filterwherebyidbenchmarks">
+<h2>FilterWhereByIdBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr class="quarry"><td title="Quarry_WhereById">Quarry_WhereById</td><td class="numeric">16.948 us</td><td class="numeric">92.231 ns</td><td class="numeric">176.069 ns</td><td class="numeric">16.883 us</td><td class="numeric">1.30 KB</td><td class="numeric">5.000</td></tr>
+<tr><td title="Raw_WhereById">Raw_WhereById</td><td class="numeric">17.402 us</td><td class="numeric">57.205 ns</td><td class="numeric">105.232 ns</td><td class="numeric">17.373 us</td><td class="numeric">1.40 KB</td><td class="numeric">5.000</td></tr>
+<tr class="quarry"><td title="Quarry_WhereById_Parameterized">Quarry_WhereById_Parameterized</td><td class="numeric">18.006 us</td><td class="numeric">100.218 ns</td><td class="numeric">191.318 ns</td><td class="numeric">17.974 us</td><td class="numeric">1.62 KB</td><td class="numeric">6.000</td></tr>
+<tr><td title="Dapper_WhereById">Dapper_WhereById</td><td class="numeric">24.337 us</td><td class="numeric">51.243 ns</td><td class="numeric">97.824 ns</td><td class="numeric">24.302 us</td><td class="numeric">2.49 KB</td><td class="numeric">9.000</td></tr>
+<tr><td title="SqlKata_WhereById">SqlKata_WhereById</td><td class="numeric">45.832 us</td><td class="numeric">410.448 ns</td><td class="numeric">837.649 ns</td><td class="numeric">45.640 us</td><td class="numeric">18.51 KB</td><td class="numeric">9.000</td></tr>
+<tr><td title="EfCore_WhereById">EfCore_WhereById</td><td class="numeric">64.232 us</td><td class="numeric">580.218 ns</td><td class="numeric">1.147 us</td><td class="numeric">64.293 us</td><td class="numeric">7.31 KB</td><td class="numeric">3.000</td></tr>
+</tbody></table>
+</section>
+<section id="filterwherecompoundbenchmarks">
+<h2>FilterWhereCompoundBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_WhereCompound">Raw_WhereCompound</td><td class="numeric">78.420 us</td><td class="numeric">331.796 ns</td><td class="numeric">633.402 ns</td><td class="numeric">78.241 us</td><td class="numeric">8.64 KB</td><td class="numeric">8.000</td></tr>
+<tr class="quarry"><td title="Quarry_WhereCompound">Quarry_WhereCompound</td><td class="numeric">78.978 us</td><td class="numeric">226.753 ns</td><td class="numeric">417.128 ns</td><td class="numeric">79.066 us</td><td class="numeric">8.80 KB</td><td class="numeric">8.000</td></tr>
+<tr><td title="SqlKata_WhereCompound">SqlKata_WhereCompound</td><td class="numeric">100.233 us</td><td class="numeric">584.506 ns</td><td class="numeric">1.116 us</td><td class="numeric">99.919 us</td><td class="numeric">22.04 KB</td><td class="numeric">11.000</td></tr>
+<tr><td title="Dapper_WhereCompound">Dapper_WhereCompound</td><td class="numeric">105.782 us</td><td class="numeric">310.881 ns</td><td class="numeric">593.474 ns</td><td class="numeric">105.871 us</td><td class="numeric">12.83 KB</td><td class="numeric">12.000</td></tr>
+<tr><td title="EfCore_WhereCompound">EfCore_WhereCompound</td><td class="numeric">158.355 us</td><td class="numeric">1.547 us</td><td class="numeric">3.529 us</td><td class="numeric">157.058 us</td><td class="numeric">33.25 KB</td><td class="numeric">4.000</td></tr>
+</tbody></table>
+</section>
+<section id="generatorcoldcompilebenchmarks">
+<h2>GeneratorColdCompileBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr class="quarry"><td title="Quarry_GeneratorColdCompile">Quarry_GeneratorColdCompile</td><td class="numeric">258.002 ms</td><td class="numeric">13.004 ms</td><td class="numeric">63.292 ms</td><td class="numeric">250.984 ms</td><td class="numeric">15.87 MB</td><td class="numeric">1.000</td></tr>
+</tbody></table>
+</section>
+<section id="generatorpipelinesplitbenchmarks">
+<h2>GeneratorPipelineSplitBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr class="quarry"><td title="Quarry_Pipeline_SchemaOnly">Quarry_Pipeline_SchemaOnly</td><td class="numeric">2.986 ms</td><td class="numeric">273.404 us</td><td class="numeric">1.395 ms</td><td class="numeric">1.969 ms</td><td class="numeric">397.59 KB</td><td class="numeric">3.000</td></tr>
+<tr class="quarry"><td title="Quarry_Pipeline_PlusQueries">Quarry_Pipeline_PlusQueries</td><td class="numeric">262.426 ms</td><td class="numeric">15.831 ms</td><td class="numeric">79.957 ms</td><td class="numeric">240.500 ms</td><td class="numeric">15.87 MB</td><td class="numeric">1.000</td></tr>
+<tr class="quarry"><td title="Quarry_Pipeline_PlusMigrations">Quarry_Pipeline_PlusMigrations</td><td class="numeric">279.769 ms</td><td class="numeric">15.439 ms</td><td class="numeric">77.580 ms</td><td class="numeric">250.780 ms</td><td class="numeric">16.09 MB</td><td class="numeric">2.000</td></tr>
+</tbody></table>
+</section>
+<section id="generatorthroughputbenchmarks">
+<h2>GeneratorThroughputBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr class="quarry"><td title="Quarry_Throughput_Small">Quarry_Throughput_Small</td><td class="numeric">84.915 ms</td><td class="numeric">5.041 ms</td><td class="numeric">25.718 ms</td><td class="numeric">76.456 ms</td><td class="numeric">4.06 MB</td><td class="numeric">1.000</td></tr>
+<tr class="quarry"><td title="Quarry_Throughput_Medium">Quarry_Throughput_Medium</td><td class="numeric">263.071 ms</td><td class="numeric">12.291 ms</td><td class="numeric">59.493 ms</td><td class="numeric">246.782 ms</td><td class="numeric">15.93 MB</td><td class="numeric">1.000</td></tr>
+<tr class="quarry"><td title="Quarry_Throughput_Large">Quarry_Throughput_Large</td><td class="numeric">547.209 ms</td><td class="numeric">32.072 ms</td><td class="numeric">163.635 ms</td><td class="numeric">450.286 ms</td><td class="numeric">43.59 MB</td><td class="numeric">5.000</td></tr>
+</tbody></table>
+</section>
+<section id="insertbatchbenchmarks">
+<h2>InsertBatchBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr class="quarry"><td title="Quarry_BatchInsert10">Quarry_BatchInsert10</td><td class="numeric">121.582 us</td><td class="numeric">393.240 ns</td><td class="numeric">695.012 ns</td><td class="numeric">121.458 us</td><td class="numeric">15.27 KB</td><td class="numeric">-</td></tr>
+<tr><td title="Raw_BatchInsert10">Raw_BatchInsert10</td><td class="numeric">132.194 us</td><td class="numeric">5.148 us</td><td class="numeric">25.733 us</td><td class="numeric">118.940 us</td><td class="numeric">16.68 KB</td><td class="numeric">-</td></tr>
+<tr><td title="SqlKata_BatchInsert10">SqlKata_BatchInsert10</td><td class="numeric">206.979 us</td><td class="numeric">2.140 us</td><td class="numeric">5.237 us</td><td class="numeric">204.989 us</td><td class="numeric">47.59 KB</td><td class="numeric">-</td></tr>
+<tr><td title="Dapper_BatchInsert10">Dapper_BatchInsert10</td><td class="numeric">241.850 us</td><td class="numeric">2.096 us</td><td class="numeric">3.857 us</td><td class="numeric">240.463 us</td><td class="numeric">32.70 KB</td><td class="numeric">-</td></tr>
+<tr><td title="EfCore_BatchInsert10">EfCore_BatchInsert10</td><td class="numeric">2.923 ms</td><td class="numeric">23.530 us</td><td class="numeric">44.918 us</td><td class="numeric">2.922 ms</td><td class="numeric">185.45 KB</td><td class="numeric">-</td></tr>
+</tbody></table>
+</section>
+<section id="insertsinglebenchmarks">
+<h2>InsertSingleBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_SingleInsert">Raw_SingleInsert</td><td class="numeric">49.120 us</td><td class="numeric">294.192 ns</td><td class="numeric">541.185 ns</td><td class="numeric">49.228 us</td><td class="numeric">1.40 KB</td><td class="numeric">-</td></tr>
+<tr class="quarry"><td title="Quarry_SingleInsert">Quarry_SingleInsert</td><td class="numeric">52.964 us</td><td class="numeric">471.461 ns</td><td class="numeric">931.612 ns</td><td class="numeric">53.050 us</td><td class="numeric">1.55 KB</td><td class="numeric">-</td></tr>
+<tr><td title="Dapper_SingleInsert">Dapper_SingleInsert</td><td class="numeric">63.879 us</td><td class="numeric">1.215 us</td><td class="numeric">5.814 us</td><td class="numeric">61.188 us</td><td class="numeric">2.53 KB</td><td class="numeric">-</td></tr>
+<tr><td title="SqlKata_SingleInsert">SqlKata_SingleInsert</td><td class="numeric">103.408 us</td><td class="numeric">515.648 ns</td><td class="numeric">948.570 ns</td><td class="numeric">103.437 us</td><td class="numeric">11.90 KB</td><td class="numeric">-</td></tr>
+<tr><td title="EfCore_SingleInsert">EfCore_SingleInsert</td><td class="numeric">1.073 ms</td><td class="numeric">29.477 us</td><td class="numeric">141.082 us</td><td class="numeric">1.063 ms</td><td class="numeric">70.24 KB</td><td class="numeric">-</td></tr>
+</tbody></table>
+</section>
+<section id="joininnerbenchmarks">
+<h2>JoinInnerBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_InnerJoin">Raw_InnerJoin</td><td class="numeric">83.011 us</td><td class="numeric">301.467 ns</td><td class="numeric">575.504 ns</td><td class="numeric">83.065 us</td><td class="numeric">10.05 KB</td><td class="numeric">10.000</td></tr>
+<tr class="quarry"><td title="Quarry_InnerJoin">Quarry_InnerJoin</td><td class="numeric">85.434 us</td><td class="numeric">174.208 ns</td><td class="numeric">320.467 ns</td><td class="numeric">85.488 us</td><td class="numeric">10.22 KB</td><td class="numeric">10.000</td></tr>
+<tr><td title="Dapper_InnerJoin">Dapper_InnerJoin</td><td class="numeric">107.769 us</td><td class="numeric">271.392 ns</td><td class="numeric">518.089 ns</td><td class="numeric">107.724 us</td><td class="numeric">12.77 KB</td><td class="numeric">12.000</td></tr>
+<tr><td title="SqlKata_InnerJoin">SqlKata_InnerJoin</td><td class="numeric">111.287 us</td><td class="numeric">535.145 ns</td><td class="numeric">984.435 ns</td><td class="numeric">111.001 us</td><td class="numeric">27.51 KB</td><td class="numeric">6.000</td></tr>
+<tr><td title="EfCore_InnerJoin">EfCore_InnerJoin</td><td class="numeric">161.672 us</td><td class="numeric">398.161 ns</td><td class="numeric">885.482 ns</td><td class="numeric">161.229 us</td><td class="numeric">36.99 KB</td><td class="numeric">4.000</td></tr>
+</tbody></table>
+</section>
+<section id="jointhreetablebenchmarks">
+<h2>JoinThreeTableBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_ThreeTableJoin">Raw_ThreeTableJoin</td><td class="numeric">255.050 us</td><td class="numeric">389.424 ns</td><td class="numeric">688.267 ns</td><td class="numeric">255.169 us</td><td class="numeric">36.35 KB</td><td class="numeric">9.000</td></tr>
+<tr class="quarry"><td title="Quarry_ThreeTableJoin">Quarry_ThreeTableJoin</td><td class="numeric">258.476 us</td><td class="numeric">602.640 ns</td><td class="numeric">1.109 us</td><td class="numeric">258.354 us</td><td class="numeric">36.55 KB</td><td class="numeric">9.000</td></tr>
+<tr><td title="SqlKata_ThreeTableJoin">SqlKata_ThreeTableJoin</td><td class="numeric">303.527 us</td><td class="numeric">2.005 us</td><td class="numeric">3.827 us</td><td class="numeric">302.622 us</td><td class="numeric">60.07 KB</td><td class="numeric">7.000</td></tr>
+<tr><td title="Dapper_ThreeTableJoin">Dapper_ThreeTableJoin</td><td class="numeric">331.945 us</td><td class="numeric">722.223 ns</td><td class="numeric">1.379 us</td><td class="numeric">331.470 us</td><td class="numeric">42.65 KB</td><td class="numeric">10.000</td></tr>
+<tr><td title="EfCore_ThreeTableJoin">EfCore_ThreeTableJoin</td><td class="numeric">427.769 us</td><td class="numeric">3.865 us</td><td class="numeric">7.888 us</td><td class="numeric">427.989 us</td><td class="numeric">96.49 KB</td><td class="numeric">6.000</td></tr>
+</tbody></table>
+</section>
+<section id="paginationfirstpagebenchmarks">
+<h2>PaginationFirstPageBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_FirstPage">Raw_FirstPage</td><td class="numeric">34.432 us</td><td class="numeric">152.215 ns</td><td class="numeric">290.581 ns</td><td class="numeric">34.411 us</td><td class="numeric">3.34 KB</td><td class="numeric">6.000</td></tr>
+<tr class="quarry"><td title="Quarry_FirstPage">Quarry_FirstPage</td><td class="numeric">34.914 us</td><td class="numeric">168.425 ns</td><td class="numeric">321.525 ns</td><td class="numeric">34.810 us</td><td class="numeric">3.88 KB</td><td class="numeric">7.000</td></tr>
+<tr><td title="Dapper_FirstPage">Dapper_FirstPage</td><td class="numeric">43.335 us</td><td class="numeric">140.542 ns</td><td class="numeric">268.297 ns</td><td class="numeric">43.291 us</td><td class="numeric">4.85 KB</td><td class="numeric">9.000</td></tr>
+<tr><td title="SqlKata_FirstPage">SqlKata_FirstPage</td><td class="numeric">70.909 us</td><td class="numeric">434.677 ns</td><td class="numeric">829.802 ns</td><td class="numeric">70.684 us</td><td class="numeric">20.10 KB</td><td class="numeric">10.000</td></tr>
+<tr><td title="EfCore_FirstPage">EfCore_FirstPage</td><td class="numeric">94.350 us</td><td class="numeric">804.470 ns</td><td class="numeric">1.536 us</td><td class="numeric">93.754 us</td><td class="numeric">11.35 KB</td><td class="numeric">2.000</td></tr>
+</tbody></table>
+</section>
+<section id="paginationlimitoffsetbenchmarks">
+<h2>PaginationLimitOffsetBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_LimitOffset">Raw_LimitOffset</td><td class="numeric">34.565 us</td><td class="numeric">133.919 ns</td><td class="numeric">255.653 ns</td><td class="numeric">34.546 us</td><td class="numeric">3.34 KB</td><td class="numeric">6.000</td></tr>
+<tr class="quarry"><td title="Quarry_LimitOffset">Quarry_LimitOffset</td><td class="numeric">36.239 us</td><td class="numeric">125.281 ns</td><td class="numeric">239.162 ns</td><td class="numeric">36.188 us</td><td class="numeric">3.89 KB</td><td class="numeric">7.000</td></tr>
+<tr><td title="Dapper_LimitOffset">Dapper_LimitOffset</td><td class="numeric">44.570 us</td><td class="numeric">122.523 ns</td><td class="numeric">233.897 ns</td><td class="numeric">44.486 us</td><td class="numeric">4.86 KB</td><td class="numeric">9.000</td></tr>
+<tr><td title="SqlKata_LimitOffset">SqlKata_LimitOffset</td><td class="numeric">74.195 us</td><td class="numeric">511.551 ns</td><td class="numeric">976.555 ns</td><td class="numeric">73.867 us</td><td class="numeric">21.53 KB</td><td class="numeric">10.000</td></tr>
+<tr><td title="EfCore_LimitOffset">EfCore_LimitOffset</td><td class="numeric">101.465 us</td><td class="numeric">907.518 ns</td><td class="numeric">1.732 us</td><td class="numeric">100.686 us</td><td class="numeric">13.10 KB</td><td class="numeric">3.000</td></tr>
+</tbody></table>
+</section>
+<section id="patchupdatebenchmarks">
+<h2>PatchUpdateBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_OneColumn">Raw_OneColumn</td><td class="numeric">43.352 us</td><td class="numeric">183.127 ns</td><td class="numeric">349.591 ns</td><td class="numeric">43.435 us</td><td class="numeric">992 B</td><td class="numeric">-</td></tr>
+<tr class="quarry"><td title="Quarry_OneColumn">Quarry_OneColumn</td><td class="numeric">46.759 us</td><td class="numeric">222.402 ns</td><td class="numeric">393.073 ns</td><td class="numeric">46.769 us</td><td class="numeric">1.50 KB</td><td class="numeric">-</td></tr>
+<tr><td title="Raw_AllColumns">Raw_AllColumns</td><td class="numeric">50.224 us</td><td class="numeric">397.372 ns</td><td class="numeric">702.314 ns</td><td class="numeric">50.295 us</td><td class="numeric">2.46 KB</td><td class="numeric">-</td></tr>
+<tr><td title="Dapper_OneColumn">Dapper_OneColumn</td><td class="numeric">52.028 us</td><td class="numeric">401.592 ns</td><td class="numeric">709.773 ns</td><td class="numeric">52.260 us</td><td class="numeric">1.55 KB</td><td class="numeric">-</td></tr>
+<tr class="quarry"><td title="Quarry_AllColumns">Quarry_AllColumns</td><td class="numeric">56.079 us</td><td class="numeric">240.910 ns</td><td class="numeric">443.170 ns</td><td class="numeric">55.904 us</td><td class="numeric">2.33 KB</td><td class="numeric">-</td></tr>
+<tr><td title="Dapper_AllColumns">Dapper_AllColumns</td><td class="numeric">75.882 us</td><td class="numeric">265.009 ns</td><td class="numeric">487.502 ns</td><td class="numeric">75.743 us</td><td class="numeric">4.89 KB</td><td class="numeric">-</td></tr>
+<tr><td title="SqlKata_OneColumn">SqlKata_OneColumn</td><td class="numeric">127.796 us</td><td class="numeric">3.601 us</td><td class="numeric">17.811 us</td><td class="numeric">124.329 us</td><td class="numeric">11.44 KB</td><td class="numeric">-</td></tr>
+<tr><td title="SqlKata_AllColumns">SqlKata_AllColumns</td><td class="numeric">141.291 us</td><td class="numeric">6.331 us</td><td class="numeric">31.647 us</td><td class="numeric">124.861 us</td><td class="numeric">14.95 KB</td><td class="numeric">-</td></tr>
+<tr><td title="EfCore_AllColumns">EfCore_AllColumns</td><td class="numeric">1.423 ms</td><td class="numeric">38.094 us</td><td class="numeric">189.438 us</td><td class="numeric">1.381 ms</td><td class="numeric">75.77 KB</td><td class="numeric">-</td></tr>
+<tr><td title="EfCore_OneColumn">EfCore_OneColumn</td><td class="numeric">1.425 ms</td><td class="numeric">37.250 us</td><td class="numeric">184.262 us</td><td class="numeric">1.407 ms</td><td class="numeric">74.29 KB</td><td class="numeric">-</td></tr>
+</tbody></table>
+</section>
+<section id="selectallbenchmarks">
+<h2>SelectAllBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_SelectAll">Raw_SelectAll</td><td class="numeric">196.614 us</td><td class="numeric">449.337 ns</td><td class="numeric">826.585 ns</td><td class="numeric">196.241 us</td><td class="numeric">24.41 KB</td><td class="numeric">12.000</td></tr>
+<tr class="quarry"><td title="Quarry_SelectAll">Quarry_SelectAll</td><td class="numeric">198.949 us</td><td class="numeric">564.843 ns</td><td class="numeric">1.078 us</td><td class="numeric">198.685 us</td><td class="numeric">28.47 KB</td><td class="numeric">14.000</td></tr>
+<tr><td title="SqlKata_SelectAll">SqlKata_SelectAll</td><td class="numeric">217.707 us</td><td class="numeric">1.243 us</td><td class="numeric">2.287 us</td><td class="numeric">217.185 us</td><td class="numeric">36.99 KB</td><td class="numeric">4.000</td></tr>
+<tr><td title="Dapper_SelectAll">Dapper_SelectAll</td><td class="numeric">241.378 us</td><td class="numeric">871.548 ns</td><td class="numeric">1.664 us</td><td class="numeric">241.408 us</td><td class="numeric">32.26 KB</td><td class="numeric">16.000</td></tr>
+<tr><td title="EfCore_SelectAll">EfCore_SelectAll</td><td class="numeric">261.160 us</td><td class="numeric">1.982 us</td><td class="numeric">3.645 us</td><td class="numeric">260.001 us</td><td class="numeric">50.58 KB</td><td class="numeric">6.000</td></tr>
+</tbody></table>
+</section>
+<section id="selectprojectionbenchmarks">
+<h2>SelectProjectionBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr class="quarry"><td title="Quarry_SelectProjection">Quarry_SelectProjection</td><td class="numeric">87.189 us</td><td class="numeric">271.900 ns</td><td class="numeric">500.177 ns</td><td class="numeric">87.109 us</td><td class="numeric">10.16 KB</td><td class="numeric">10.000</td></tr>
+<tr><td title="Raw_SelectProjection">Raw_SelectProjection</td><td class="numeric">88.922 us</td><td class="numeric">235.594 ns</td><td class="numeric">433.390 ns</td><td class="numeric">88.797 us</td><td class="numeric">10.01 KB</td><td class="numeric">10.000</td></tr>
+<tr><td title="SqlKata_SelectProjection">SqlKata_SelectProjection</td><td class="numeric">107.999 us</td><td class="numeric">488.652 ns</td><td class="numeric">932.841 ns</td><td class="numeric">108.018 us</td><td class="numeric">21.21 KB</td><td class="numeric">10.000</td></tr>
+<tr><td title="Dapper_SelectProjection">Dapper_SelectProjection</td><td class="numeric">118.167 us</td><td class="numeric">386.354 ns</td><td class="numeric">737.553 ns</td><td class="numeric">118.032 us</td><td class="numeric">15.13 KB</td><td class="numeric">15.000</td></tr>
+<tr><td title="EfCore_SelectProjection">EfCore_SelectProjection</td><td class="numeric">153.839 us</td><td class="numeric">787.515 ns</td><td class="numeric">1.449 us</td><td class="numeric">154.162 us</td><td class="numeric">35.64 KB</td><td class="numeric">8.000</td></tr>
+</tbody></table>
+</section>
+<section id="setexceptbenchmarks">
+<h2>SetExceptBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_Except">Raw_Except</td><td class="numeric">88.575 us</td><td class="numeric">452.557 ns</td><td class="numeric">863.936 ns</td><td class="numeric">88.169 us</td><td class="numeric">8.74 KB</td><td class="numeric">8.000</td></tr>
+<tr class="quarry"><td title="Quarry_Except">Quarry_Except</td><td class="numeric">89.085 us</td><td class="numeric">206.874 ns</td><td class="numeric">365.629 ns</td><td class="numeric">89.031 us</td><td class="numeric">8.90 KB</td><td class="numeric">8.000</td></tr>
+<tr><td title="Dapper_Except">Dapper_Except</td><td class="numeric">110.514 us</td><td class="numeric">306.666 ns</td><td class="numeric">585.427 ns</td><td class="numeric">110.357 us</td><td class="numeric">11.02 KB</td><td class="numeric">11.000</td></tr>
+<tr><td title="SqlKata_Except">SqlKata_Except</td><td class="numeric">128.917 us</td><td class="numeric">436.253 ns</td><td class="numeric">802.516 ns</td><td class="numeric">128.839 us</td><td class="numeric">37.12 KB</td><td class="numeric">9.000</td></tr>
+<tr><td title="EfCore_Except">EfCore_Except</td><td class="numeric">190.740 us</td><td class="numeric">1.147 us</td><td class="numeric">2.110 us</td><td class="numeric">190.346 us</td><td class="numeric">39.79 KB</td><td class="numeric">4.000</td></tr>
+</tbody></table>
+</section>
+<section id="setintersectbenchmarks">
+<h2>SetIntersectBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_Intersect">Raw_Intersect</td><td class="numeric">117.913 us</td><td class="numeric">232.431 ns</td><td class="numeric">427.572 ns</td><td class="numeric">117.938 us</td><td class="numeric">8.68 KB</td><td class="numeric">8.000</td></tr>
+<tr class="quarry"><td title="Quarry_Intersect">Quarry_Intersect</td><td class="numeric">119.843 us</td><td class="numeric">379.254 ns</td><td class="numeric">697.663 ns</td><td class="numeric">119.576 us</td><td class="numeric">8.84 KB</td><td class="numeric">4.000</td></tr>
+<tr><td title="Dapper_Intersect">Dapper_Intersect</td><td class="numeric">142.014 us</td><td class="numeric">240.921 ns</td><td class="numeric">443.191 ns</td><td class="numeric">141.997 us</td><td class="numeric">10.94 KB</td><td class="numeric">5.000</td></tr>
+<tr><td title="SqlKata_Intersect">SqlKata_Intersect</td><td class="numeric">154.748 us</td><td class="numeric">995.131 ns</td><td class="numeric">1.900 us</td><td class="numeric">154.552 us</td><td class="numeric">33.25 KB</td><td class="numeric">8.000</td></tr>
+<tr><td title="EfCore_Intersect">EfCore_Intersect</td><td class="numeric">229.159 us</td><td class="numeric">1.734 us</td><td class="numeric">3.310 us</td><td class="numeric">227.772 us</td><td class="numeric">39.47 KB</td><td class="numeric">4.000</td></tr>
+</tbody></table>
+</section>
+<section id="setunionallbenchmarks">
+<h2>SetUnionAllBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_UnionAll">Raw_UnionAll</td><td class="numeric">75.395 us</td><td class="numeric">384.838 ns</td><td class="numeric">734.659 ns</td><td class="numeric">75.051 us</td><td class="numeric">9.45 KB</td><td class="numeric">9.000</td></tr>
+<tr class="quarry"><td title="Quarry_UnionAll">Quarry_UnionAll</td><td class="numeric">76.456 us</td><td class="numeric">295.029 ns</td><td class="numeric">563.212 ns</td><td class="numeric">76.271 us</td><td class="numeric">9.60 KB</td><td class="numeric">9.000</td></tr>
+<tr><td title="Dapper_UnionAll">Dapper_UnionAll</td><td class="numeric">96.362 us</td><td class="numeric">328.546 ns</td><td class="numeric">627.198 ns</td><td class="numeric">96.355 us</td><td class="numeric">11.96 KB</td><td class="numeric">11.000</td></tr>
+<tr><td title="SqlKata_UnionAll">SqlKata_UnionAll</td><td class="numeric">115.199 us</td><td class="numeric">758.193 ns</td><td class="numeric">1.395 us</td><td class="numeric">114.492 us</td><td class="numeric">37.89 KB</td><td class="numeric">9.000</td></tr>
+<tr><td title="EfCore_UnionAll">EfCore_UnionAll</td><td class="numeric">180.703 us</td><td class="numeric">1.146 us</td><td class="numeric">2.108 us</td><td class="numeric">180.042 us</td><td class="numeric">42.13 KB</td><td class="numeric">5.000</td></tr>
+</tbody></table>
+</section>
+<section id="stringcontainsbenchmarks">
+<h2>StringContainsBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_Contains">Raw_Contains</td><td class="numeric">33.815 us</td><td class="numeric">95.880 ns</td><td class="numeric">176.378 ns</td><td class="numeric">33.789 us</td><td class="numeric">1.89 KB</td><td class="numeric">3.000</td></tr>
+<tr class="quarry"><td title="Quarry_Contains">Quarry_Contains</td><td class="numeric">34.165 us</td><td class="numeric">151.438 ns</td><td class="numeric">278.580 ns</td><td class="numeric">34.054 us</td><td class="numeric">2.04 KB</td><td class="numeric">4.000</td></tr>
+<tr><td title="Dapper_Contains">Dapper_Contains</td><td class="numeric">39.355 us</td><td class="numeric">143.186 ns</td><td class="numeric">273.344 ns</td><td class="numeric">39.401 us</td><td class="numeric">2.80 KB</td><td class="numeric">5.000</td></tr>
+<tr><td title="SqlKata_Contains">SqlKata_Contains</td><td class="numeric">85.827 us</td><td class="numeric">176.904 ns</td><td class="numeric">312.660 ns</td><td class="numeric">85.814 us</td><td class="numeric">17.99 KB</td><td class="numeric">9.000</td></tr>
+<tr><td title="EfCore_Contains">EfCore_Contains</td><td class="numeric">100.874 us</td><td class="numeric">802.153 ns</td><td class="numeric">1.476 us</td><td class="numeric">100.306 us</td><td class="numeric">14.04 KB</td><td class="numeric">3.000</td></tr>
+</tbody></table>
+</section>
+<section id="stringstartswithbenchmarks">
+<h2>StringStartsWithBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_StartsWith">Raw_StartsWith</td><td class="numeric">100.440 us</td><td class="numeric">309.527 ns</td><td class="numeric">569.396 ns</td><td class="numeric">100.414 us</td><td class="numeric">9.97 KB</td><td class="numeric">9.000</td></tr>
+<tr class="quarry"><td title="Quarry_StartsWith">Quarry_StartsWith</td><td class="numeric">101.953 us</td><td class="numeric">290.942 ns</td><td class="numeric">535.206 ns</td><td class="numeric">101.907 us</td><td class="numeric">10.12 KB</td><td class="numeric">10.000</td></tr>
+<tr><td title="Dapper_StartsWith">Dapper_StartsWith</td><td class="numeric">134.588 us</td><td class="numeric">597.572 ns</td><td class="numeric">1.141 us</td><td class="numeric">134.359 us</td><td class="numeric">15.05 KB</td><td class="numeric">7.000</td></tr>
+<tr><td title="SqlKata_StartsWith">SqlKata_StartsWith</td><td class="numeric">156.834 us</td><td class="numeric">1.244 us</td><td class="numeric">2.375 us</td><td class="numeric">156.086 us</td><td class="numeric">26.07 KB</td><td class="numeric">6.000</td></tr>
+<tr><td title="EfCore_StartsWith">EfCore_StartsWith</td><td class="numeric">180.671 us</td><td class="numeric">1.296 us</td><td class="numeric">2.290 us</td><td class="numeric">180.197 us</td><td class="numeric">38.57 KB</td><td class="numeric">4.000</td></tr>
+</tbody></table>
+</section>
+<section id="subquerycountbenchmarks">
+<h2>SubqueryCountBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr class="quarry"><td title="Quarry_CountSubquery">Quarry_CountSubquery</td><td class="numeric">483.592 us</td><td class="numeric">1.176 us</td><td class="numeric">2.246 us</td><td class="numeric">482.807 us</td><td class="numeric">1.09 KB</td><td class="numeric">-</td></tr>
+<tr><td title="Raw_CountSubquery">Raw_CountSubquery</td><td class="numeric">484.089 us</td><td class="numeric">1.330 us</td><td class="numeric">2.539 us</td><td class="numeric">483.316 us</td><td class="numeric">952 B</td><td class="numeric">-</td></tr>
+<tr><td title="Dapper_CountSubquery">Dapper_CountSubquery</td><td class="numeric">484.993 us</td><td class="numeric">585.763 ns</td><td class="numeric">1.118 us</td><td class="numeric">484.763 us</td><td class="numeric">1.72 KB</td><td class="numeric">-</td></tr>
+<tr><td title="SqlKata_CountSubquery_RawFallback">SqlKata_CountSubquery_RawFallback</td><td class="numeric">537.710 us</td><td class="numeric">2.063 us</td><td class="numeric">3.938 us</td><td class="numeric">536.282 us</td><td class="numeric">35.02 KB</td><td class="numeric">4.000</td></tr>
+<tr><td title="EfCore_CountSubquery">EfCore_CountSubquery</td><td class="numeric">546.802 us</td><td class="numeric">3.106 us</td><td class="numeric">5.929 us</td><td class="numeric">545.322 us</td><td class="numeric">9.98 KB</td><td class="numeric">1.000</td></tr>
+</tbody></table>
+</section>
+<section id="subqueryexistsbenchmarks">
+<h2>SubqueryExistsBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr class="quarry"><td title="Quarry_Exists">Quarry_Exists</td><td class="numeric">328.536 us</td><td class="numeric">603.994 ns</td><td class="numeric">1.067 us</td><td class="numeric">328.474 us</td><td class="numeric">10.23 KB</td><td class="numeric">2.000</td></tr>
+<tr><td title="Raw_Exists">Raw_Exists</td><td class="numeric">331.304 us</td><td class="numeric">1.359 us</td><td class="numeric">2.595 us</td><td class="numeric">330.497 us</td><td class="numeric">10.07 KB</td><td class="numeric">2.000</td></tr>
+<tr><td title="Dapper_Exists">Dapper_Exists</td><td class="numeric">343.798 us</td><td class="numeric">1.077 us</td><td class="numeric">2.056 us</td><td class="numeric">343.102 us</td><td class="numeric">12.80 KB</td><td class="numeric">3.000</td></tr>
+<tr><td title="SqlKata_Exists">SqlKata_Exists</td><td class="numeric">396.558 us</td><td class="numeric">1.422 us</td><td class="numeric">2.714 us</td><td class="numeric">396.846 us</td><td class="numeric">57.69 KB</td><td class="numeric">7.000</td></tr>
+<tr><td title="EfCore_Exists">EfCore_Exists</td><td class="numeric">405.563 us</td><td class="numeric">2.743 us</td><td class="numeric">5.237 us</td><td class="numeric">403.713 us</td><td class="numeric">38.11 KB</td><td class="numeric">4.000</td></tr>
+</tbody></table>
+</section>
+<section id="subqueryfilteredexistsbenchmarks">
+<h2>SubqueryFilteredExistsBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_FilteredExists">Raw_FilteredExists</td><td class="numeric">408.830 us</td><td class="numeric">1.124 us</td><td class="numeric">2.067 us</td><td class="numeric">408.589 us</td><td class="numeric">8.26 KB</td><td class="numeric">2.000</td></tr>
+<tr class="quarry"><td title="Quarry_FilteredExists">Quarry_FilteredExists</td><td class="numeric">414.530 us</td><td class="numeric">1.388 us</td><td class="numeric">2.650 us</td><td class="numeric">414.442 us</td><td class="numeric">8.43 KB</td><td class="numeric">2.000</td></tr>
+<tr><td title="Dapper_FilteredExists">Dapper_FilteredExists</td><td class="numeric">429.502 us</td><td class="numeric">1.507 us</td><td class="numeric">2.877 us</td><td class="numeric">428.198 us</td><td class="numeric">10.38 KB</td><td class="numeric">2.000</td></tr>
+<tr><td title="SqlKata_FilteredExists">SqlKata_FilteredExists</td><td class="numeric">487.520 us</td><td class="numeric">2.184 us</td><td class="numeric">4.169 us</td><td class="numeric">487.440 us</td><td class="numeric">61.19 KB</td><td class="numeric">7.000</td></tr>
+<tr><td title="EfCore_FilteredExists">EfCore_FilteredExists</td><td class="numeric">498.330 us</td><td class="numeric">1.739 us</td><td class="numeric">3.321 us</td><td class="numeric">498.179 us</td><td class="numeric">32.95 KB</td><td class="numeric">4.000</td></tr>
+</tbody></table>
+</section>
+<section id="subquerysumbenchmarks">
+<h2>SubquerySumBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr class="quarry"><td title="Quarry_SumSubquery">Quarry_SumSubquery</td><td class="numeric">489.647 us</td><td class="numeric">725.884 ns</td><td class="numeric">1.386 us</td><td class="numeric">490.144 us</td><td class="numeric">1.10 KB</td><td class="numeric">-</td></tr>
+<tr><td title="Dapper_SumSubquery">Dapper_SumSubquery</td><td class="numeric">493.821 us</td><td class="numeric">1.809 us</td><td class="numeric">3.453 us</td><td class="numeric">492.481 us</td><td class="numeric">1.73 KB</td><td class="numeric">-</td></tr>
+<tr><td title="Raw_SumSubquery">Raw_SumSubquery</td><td class="numeric">497.316 us</td><td class="numeric">1.030 us</td><td class="numeric">1.896 us</td><td class="numeric">497.353 us</td><td class="numeric">960 B</td><td class="numeric">-</td></tr>
+<tr><td title="SqlKata_SumSubquery_RawFallback">SqlKata_SumSubquery_RawFallback</td><td class="numeric">537.978 us</td><td class="numeric">1.773 us</td><td class="numeric">3.386 us</td><td class="numeric">536.826 us</td><td class="numeric">35.04 KB</td><td class="numeric">4.000</td></tr>
+<tr><td title="EfCore_SumSubquery">EfCore_SumSubquery</td><td class="numeric">553.660 us</td><td class="numeric">1.632 us</td><td class="numeric">3.003 us</td><td class="numeric">552.374 us</td><td class="numeric">11.20 KB</td><td class="numeric">1.000</td></tr>
+</tbody></table>
+</section>
+<section id="throughputbenchmarks">
+<h2>ThroughputBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_Throughput">Raw_Throughput</td><td class="numeric">16.582 ms</td><td class="numeric">87.965 us</td><td class="numeric">161.818 us</td><td class="numeric">16.527 ms</td><td class="numeric">1.28 MB</td><td class="numeric">5.000</td></tr>
+<tr class="quarry"><td title="Quarry_Throughput">Quarry_Throughput</td><td class="numeric">19.459 ms</td><td class="numeric">67.198 us</td><td class="numeric">123.615 us</td><td class="numeric">19.430 ms</td><td class="numeric">1.83 MB</td><td class="numeric">7.000</td></tr>
+<tr><td title="Dapper_Throughput">Dapper_Throughput</td><td class="numeric">23.536 ms</td><td class="numeric">73.545 us</td><td class="numeric">140.397 us</td><td class="numeric">23.469 ms</td><td class="numeric">2.40 MB</td><td class="numeric">9.000</td></tr>
+<tr><td title="SqlKata_Throughput">SqlKata_Throughput</td><td class="numeric">46.068 ms</td><td class="numeric">438.145 us</td><td class="numeric">921.693 us</td><td class="numeric">45.892 ms</td><td class="numeric">18.05 MB</td><td class="numeric">6.000</td></tr>
+<tr><td title="EfCore_Throughput">EfCore_Throughput</td><td class="numeric">75.042 ms</td><td class="numeric">739.882 us</td><td class="numeric">1.645 ms</td><td class="numeric">74.573 ms</td><td class="numeric">8.11 MB</td><td class="numeric">3.000</td></tr>
+</tbody></table>
+</section>
+<section id="updatebenchmarks">
+<h2>UpdateBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr class="quarry"><td title="Quarry_UpdateSingleRow_Inlined">Quarry_UpdateSingleRow_Inlined</td><td class="numeric">39.536 us</td><td class="numeric">175.697 ns</td><td class="numeric">323.207 ns</td><td class="numeric">39.575 us</td><td class="numeric">576 B</td><td class="numeric">-</td></tr>
+<tr class="quarry"><td title="Quarry_UpdateSingleRow">Quarry_UpdateSingleRow</td><td class="numeric">42.909 us</td><td class="numeric">300.931 ns</td><td class="numeric">553.583 ns</td><td class="numeric">42.733 us</td><td class="numeric">880 B</td><td class="numeric">-</td></tr>
+<tr><td title="Raw_UpdateSingleRow">Raw_UpdateSingleRow</td><td class="numeric">42.943 us</td><td class="numeric">307.689 ns</td><td class="numeric">566.015 ns</td><td class="numeric">43.105 us</td><td class="numeric">992 B</td><td class="numeric">-</td></tr>
+<tr><td title="Dapper_UpdateSingleRow">Dapper_UpdateSingleRow</td><td class="numeric">52.005 us</td><td class="numeric">323.133 ns</td><td class="numeric">594.425 ns</td><td class="numeric">52.014 us</td><td class="numeric">1.55 KB</td><td class="numeric">-</td></tr>
+<tr><td title="SqlKata_UpdateSingleRow">SqlKata_UpdateSingleRow</td><td class="numeric">130.050 us</td><td class="numeric">3.103 us</td><td class="numeric">15.592 us</td><td class="numeric">128.007 us</td><td class="numeric">11.44 KB</td><td class="numeric">-</td></tr>
+<tr><td title="EfCore_UpdateSingleRow">EfCore_UpdateSingleRow</td><td class="numeric">995.961 us</td><td class="numeric">34.677 us</td><td class="numeric">173.350 us</td><td class="numeric">956.837 us</td><td class="numeric">64.78 KB</td><td class="numeric">-</td></tr>
+</tbody></table>
+</section>
+<section id="windowlagbenchmarks">
+<h2>WindowLagBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr class="quarry"><td title="Quarry_Lag">Quarry_Lag</td><td class="numeric">230.258 us</td><td class="numeric">667.739 ns</td><td class="numeric">1.228 us</td><td class="numeric">229.720 us</td><td class="numeric">7.86 KB</td><td class="numeric">3.000</td></tr>
+<tr><td title="Raw_Lag">Raw_Lag</td><td class="numeric">233.873 us</td><td class="numeric">672.415 ns</td><td class="numeric">1.284 us</td><td class="numeric">233.809 us</td><td class="numeric">7.70 KB</td><td class="numeric">3.000</td></tr>
+<tr><td title="Dapper_Lag">Dapper_Lag</td><td class="numeric">262.572 us</td><td class="numeric">734.997 ns</td><td class="numeric">1.352 us</td><td class="numeric">262.222 us</td><td class="numeric">15.33 KB</td><td class="numeric">3.000</td></tr>
+<tr><td title="SqlKata_Lag_RawFallback">SqlKata_Lag_RawFallback</td><td class="numeric">270.801 us</td><td class="numeric">744.558 ns</td><td class="numeric">1.316 us</td><td class="numeric">270.709 us</td><td class="numeric">40.01 KB</td><td class="numeric">5.000</td></tr>
+<tr><td title="EfCore_Lag_RawFallback">EfCore_Lag_RawFallback</td><td class="numeric">310.273 us</td><td class="numeric">1.329 us</td><td class="numeric">2.538 us</td><td class="numeric">309.558 us</td><td class="numeric">34.20 KB</td><td class="numeric">4.000</td></tr>
+</tbody></table>
+</section>
+<section id="windowrankbenchmarks">
+<h2>WindowRankBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr class="quarry"><td title="Quarry_Rank">Quarry_Rank</td><td class="numeric">215.472 us</td><td class="numeric">512.179 ns</td><td class="numeric">977.754 ns</td><td class="numeric">215.241 us</td><td class="numeric">6.29 KB</td><td class="numeric">3.000</td></tr>
+<tr><td title="Raw_Rank">Raw_Rank</td><td class="numeric">218.992 us</td><td class="numeric">692.562 ns</td><td class="numeric">1.322 us</td><td class="numeric">218.618 us</td><td class="numeric">6.14 KB</td><td class="numeric">3.000</td></tr>
+<tr><td title="Dapper_Rank">Dapper_Rank</td><td class="numeric">241.235 us</td><td class="numeric">1.363 us</td><td class="numeric">2.603 us</td><td class="numeric">240.467 us</td><td class="numeric">11.20 KB</td><td class="numeric">2.000</td></tr>
+<tr><td title="SqlKata_Rank_RawFallback">SqlKata_Rank_RawFallback</td><td class="numeric">256.659 us</td><td class="numeric">2.239 us</td><td class="numeric">3.957 us</td><td class="numeric">254.783 us</td><td class="numeric">38.43 KB</td><td class="numeric">4.000</td></tr>
+<tr><td title="EfCore_Rank_RawFallback">EfCore_Rank_RawFallback</td><td class="numeric">293.049 us</td><td class="numeric">2.013 us</td><td class="numeric">3.843 us</td><td class="numeric">291.220 us</td><td class="numeric">32.54 KB</td><td class="numeric">4.000</td></tr>
+</tbody></table>
+</section>
+<section id="windowrownumberbenchmarks">
+<h2>WindowRowNumberBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr><td title="Raw_RowNumber">Raw_RowNumber</td><td class="numeric">191.050 us</td><td class="numeric">327.007 ns</td><td class="numeric">601.552 ns</td><td class="numeric">190.988 us</td><td class="numeric">6.15 KB</td><td class="numeric">3.000</td></tr>
+<tr class="quarry"><td title="Quarry_RowNumber">Quarry_RowNumber</td><td class="numeric">198.448 us</td><td class="numeric">1.152 us</td><td class="numeric">2.119 us</td><td class="numeric">197.903 us</td><td class="numeric">6.30 KB</td><td class="numeric">1.000</td></tr>
+<tr><td title="Dapper_RowNumber">Dapper_RowNumber</td><td class="numeric">228.081 us</td><td class="numeric">761.365 ns</td><td class="numeric">1.453 us</td><td class="numeric">227.623 us</td><td class="numeric">11.22 KB</td><td class="numeric">5.000</td></tr>
+<tr><td title="SqlKata_RowNumber_RawFallback">SqlKata_RowNumber_RawFallback</td><td class="numeric">247.637 us</td><td class="numeric">1.773 us</td><td class="numeric">3.386 us</td><td class="numeric">246.175 us</td><td class="numeric">38.47 KB</td><td class="numeric">4.000</td></tr>
+<tr><td title="EfCore_RowNumber_RawFallback">EfCore_RowNumber_RawFallback</td><td class="numeric">273.986 us</td><td class="numeric">1.731 us</td><td class="numeric">3.305 us</td><td class="numeric">273.578 us</td><td class="numeric">32.62 KB</td><td class="numeric">4.000</td></tr>
+</tbody></table>
+</section>
+<section id="windowrunningsumbenchmarks">
+<h2>WindowRunningSumBenchmarks</h2>
+<table>
+<colgroup><col style="width:34%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:12%"><col style="width:10%"></colgroup>
+<thead><tr><th>Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Allocated</th><th>Gen0</th></tr></thead>
+<tbody>
+<tr class="quarry"><td title="Quarry_RunningSum">Quarry_RunningSum</td><td class="numeric">178.894 us</td><td class="numeric">947.065 ns</td><td class="numeric">1.808 us</td><td class="numeric">178.012 us</td><td class="numeric">7.08 KB</td><td class="numeric">3.000</td></tr>
+<tr><td title="Raw_RunningSum">Raw_RunningSum</td><td class="numeric">180.411 us</td><td class="numeric">752.317 ns</td><td class="numeric">1.436 us</td><td class="numeric">179.944 us</td><td class="numeric">6.92 KB</td><td class="numeric">3.000</td></tr>
+<tr><td title="Dapper_RunningSum">Dapper_RunningSum</td><td class="numeric">223.441 us</td><td class="numeric">454.756 ns</td><td class="numeric">868.134 ns</td><td class="numeric">223.502 us</td><td class="numeric">14.39 KB</td><td class="numeric">7.000</td></tr>
+<tr><td title="SqlKata_RunningSum_RawFallback">SqlKata_RunningSum_RawFallback</td><td class="numeric">224.062 us</td><td class="numeric">1.300 us</td><td class="numeric">2.391 us</td><td class="numeric">223.460 us</td><td class="numeric">39.23 KB</td><td class="numeric">4.000</td></tr>
+<tr><td title="EfCore_RunningSum_RawFallback">EfCore_RunningSum_RawFallback</td><td class="numeric">254.362 us</td><td class="numeric">1.373 us</td><td class="numeric">2.525 us</td><td class="numeric">254.012 us</td><td class="numeric">33.42 KB</td><td class="numeric">4.000</td></tr>
+</tbody></table>
+</section>
+</main>
+</div>
+</body>
+</html>

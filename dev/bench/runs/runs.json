@@ -1,5 +1,11 @@
 [
   {
+    "sha": "ad0af6373e93282c4ee399042af824956873f5b8",
+    "message": "Fix migration model duplication drift: single-source models, loud snapshot-recompile failure (#313) (#325)",
+    "date": "2026-07-14T11:20:04-04:00",
+    "file": "2026-07-14-ad0af637.html"
+  },
+  {
     "sha": "62510f54db5db8f83d4f3e823070c49ab018afc3",
     "message": "Fix conditional clause mask model: honor conditional modifiers, structural cascade grouping (#307) (#322)",
     "date": "2026-07-13T17:11:37-04:00",

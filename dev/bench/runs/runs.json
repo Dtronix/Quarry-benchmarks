@@ -1,5 +1,11 @@
 [
   {
+    "sha": "94e4a43d2630ae6394a0604acd73cd1fc77e4e98",
+    "message": "Diagnostic pipeline reliability: value-channel errors, fail-loud deferred registry, trace persistence (#311) (#326)",
+    "date": "2026-07-22T10:11:28-04:00",
+    "file": "2026-07-22-94e4a43d.html"
+  },
+  {
     "sha": "ad0af6373e93282c4ee399042af824956873f5b8",
     "message": "Fix migration model duplication drift: single-source models, loud snapshot-recompile failure (#313) (#325)",
     "date": "2026-07-14T11:20:04-04:00",

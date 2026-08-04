@@ -1,5 +1,11 @@
 [
   {
+    "sha": "b03e2461eb813332ac7932dbb5ef57f142287806",
+    "message": "Test suite guardrails: real caching coverage, perf gate, concurrency, row-order, bug pins, manifest CI, streaming/cancellation (#335)",
+    "date": "2026-08-04T12:17:41-04:00",
+    "file": "2026-08-04-b03e2461.html"
+  },
+  {
     "sha": "7b97b8abc28add6c3814ad237fe1533912eadc29",
     "message": "Fix QRY037: CTE chains with captured inner and outer parameters (#305) (#306)",
     "date": "2026-08-03T17:01:14-04:00",
